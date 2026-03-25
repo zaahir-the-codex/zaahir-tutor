@@ -164,11 +164,14 @@ Format like a real DBE marking guideline."""
 # ============================================================
 @app.get("/")
 async def home(request: Request):
-    """Serve the main page."""
+    """Serve the main page directly from file."""
     try:
-        return templates.TemplateResponse("index.html", {"request": request})
+        # Read the HTML file directly
+        with open("templates/index.html", "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content)
     except Exception as e:
-        print(f"Template error: {e}")
+        print(f"Error reading template: {e}")
         traceback.print_exc()
         return HTMLResponse(f"<h1>Error loading page</h1><p>{str(e)}</p>", status_code=500)
 
