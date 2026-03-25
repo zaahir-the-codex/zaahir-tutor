@@ -26,6 +26,8 @@
       --tag-bg: #eef1f8;
       --tag-text: #555c7a;
       --shadow: 0 2px 12px rgba(74,106,220,0.08);
+      --paper-bg: #fefefe;
+      --paper-border: #ddd;
     }
 
     :root[data-theme="dark"] {
@@ -49,6 +51,8 @@
       --tag-bg: #1a1d30;
       --tag-text: #666;
       --shadow: 0 2px 12px rgba(0,0,0,0.3);
+      --paper-bg: #1a1d2e;
+      --paper-border: #2d3148;
     }
 
     :root[data-theme="green"] {
@@ -72,6 +76,8 @@
       --tag-bg: #0f2a1e;
       --tag-text: #4a7a60;
       --shadow: 0 2px 12px rgba(0,0,0,0.4);
+      --paper-bg: #0f1a14;
+      --paper-border: #1e3d2a;
     }
 
     :root[data-theme="purple"] {
@@ -95,6 +101,8 @@
       --tag-bg: #1a0f30;
       --tag-text: #5a4a80;
       --shadow: 0 2px 12px rgba(0,0,0,0.4);
+      --paper-bg: #160f22;
+      --paper-border: #2d1f48;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -373,12 +381,69 @@
     }
     .msg.ai pre {
       background: var(--bg3);
-      padding: 10px;
-      border-radius: 6px;
+      padding: 12px;
+      border-radius: 8px;
       overflow-x: auto;
-      font-family: monospace;
+      font-family: 'Courier New', monospace;
       font-size: 12px;
+      margin: 8px 0;
+      white-space: pre-wrap;
     }
+
+    .paper-container {
+      background: var(--paper-bg);
+      border: 1px solid var(--paper-border);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 8px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      position: relative;
+    }
+
+    .paper-header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--accent);
+    }
+
+    .paper-header h2 {
+      font-size: 16px;
+      color: var(--accent);
+      margin: 5px 0;
+    }
+
+    .ask-btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 11px;
+      cursor: pointer;
+      margin-left: 8px;
+      transition: opacity 0.15s;
+    }
+    .ask-btn:hover { opacity: 0.8; }
+
+    .selection-toolbar {
+      position: fixed;
+      background: var(--accent);
+      color: white;
+      border-radius: 30px;
+      padding: 8px 16px;
+      font-size: 13px;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      cursor: pointer;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .selection-toolbar:hover { background: var(--accent2); }
 
     .sources {
       margin-top: 10px;
@@ -477,33 +542,6 @@
       overflow-y: auto;
       padding: 16px;
     }
-    .paper-area h2 { font-size: 15px; color: var(--accent); margin-bottom: 6px; }
-    .paper-area .hint { font-size: 13px; color: var(--text3); margin-bottom: 16px; }
-
-    .paper-box {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      white-space: pre-wrap;
-      font-family: 'Courier New', monospace;
-      font-size: 13px;
-      line-height: 1.7;
-      color: var(--text);
-    }
-
-    .copy-btn {
-      margin-top: 10px;
-      padding: 8px 18px;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text2);
-      font-size: 13px;
-      cursor: pointer;
-      font-family: inherit;
-    }
-    .copy-btn:hover { background: var(--accent-bg); color: var(--accent); }
 
     .hidden { display: none; }
 
@@ -520,22 +558,9 @@
     }
     .welcome-tip strong { color: var(--accent); }
 
-    /* Desktop layout */
-    .sidebar-desktop {
-      display: none;
-    }
-
-    .menu-btn {
-      display: flex !important;
-    }
-
-    .layout {
-      display: block;
-    }
-
-    .msg {
-      max-width: 92%;
-    }
+    .menu-btn { display: flex !important; }
+    .layout { display: block; }
+    .msg { max-width: 92%; }
 
     .divider {
       border: none;
@@ -556,6 +581,16 @@
       display: flex;
       gap: 8px;
       align-items: center;
+    }
+
+    .highlight {
+      background-color: rgba(124, 158, 255, 0.3);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.1s;
+    }
+    .highlight:hover {
+      background-color: rgba(124, 158, 255, 0.5);
     }
   </style>
 </head>
@@ -598,30 +633,31 @@
   <div id="paper-settings" class="menu-section hidden">
     <hr class="divider">
     <div class="menu-section-label">Paper Settings</div>
-    <span class="field-label">Total Marks</span>
-    <input type="number" class="menu-input" id="total-marks" value="150" min="50" max="300">
-    <span class="field-label">Duration (hours)</span>
-    <input type="number" class="menu-input" id="duration" value="3" min="1" max="4" step="0.5">
     <span class="field-label">Paper Number</span>
     <select class="menu-select" id="paper-num">
       <option value="1">Paper 1</option>
       <option value="2">Paper 2</option>
       <option value="3">Paper 3</option>
     </select>
+    <span class="field-label">Total Marks</span>
+    <input type="number" class="menu-input" id="total-marks" value="150" min="50" max="300">
+    <span class="field-label">Duration (hours)</span>
+    <input type="number" class="menu-input" id="duration" value="3" min="1" max="4" step="0.5">
     <span class="field-label">Focus Topics (optional)</span>
     <input type="text" class="menu-input" id="topics" placeholder="e.g. Algebra, Trigonometry">
-    <button class="gen-btn" id="gen-btn" onclick="generatePaper(); closeMenu()">Generate Paper + Memo</button>
+    <label style="display:flex; align-items:center; gap:8px; margin:8px 0;">
+      <input type="checkbox" id="include-memo" checked> Include Memorandum
+    </label>
+    <button class="gen-btn" id="gen-btn" onclick="generatePaper(); closeMenu()">📄 Generate Paper + Memo</button>
   </div>
 
   <div class="menu-section">
     <hr class="divider">
-    <div class="menu-section-label">📥 Fetch Papers</div>
+    <div class="menu-section-label">📥 Fetch Past Papers</div>
     <select class="menu-select" id="fetch-subject">
       <option>Mathematics</option>
       <option>Physical Sciences</option>
       <option>Life Sciences</option>
-      <option>Business Studies</option>
-      <option>Dramatic Arts</option>
     </select>
     <select class="menu-select" id="fetch-year">
       <option>2024</option>
@@ -658,22 +694,11 @@
     <div class="chat-area" id="chat-area">
       <div class="welcome-tip">
         <strong>Welcome to Zaahir's Tutor! 🎓</strong><br><br>
-        I'm your personal Grade 12 AI tutor, trained on the South African CAPS
-        curriculum and NSC past papers.<br><br>
-        <strong>📸 How to upload a problem:</strong><br>
-        1. Take a clear photo of your handwritten problem<br>
-        2. Click the 📷 button and select the photo<br>
-        3. Wait for text extraction<br>
-        4. Type your question (e.g., "Solve this step by step") and click Send<br><br>
-        <strong>📥 Fetch past papers</strong> directly from the DBE website using the menu.<br><br>
+        <strong>📝 Generate Papers:</strong> Go to the menu, select "Generate Paper", choose your settings, and click Generate. The paper will appear here in authentic DBE format!<br><br>
+        <strong>✨ Ask About Anything:</strong> Highlight any text in a generated paper or explanation, and click "Ask Zaahir" to get a detailed explanation of that specific section.<br><br>
+        <strong>📸 Upload Problems:</strong> Take a photo of a handwritten problem, upload it, then ask for help!<br><br>
         Select your subject in the menu and ask me anything!
       </div>
-    </div>
-
-    <div class="paper-area hidden" id="paper-area">
-      <h2>Generated Exam Paper</h2>
-      <p class="hint">Configure your settings in the menu then click Generate Paper + Memo.</p>
-      <div id="paper-output"></div>
     </div>
 
     <div class="input-bar" id="input-bar">
@@ -698,12 +723,15 @@
   let chatHistory = [];
   let currentTheme = localStorage.getItem('zt-theme') || 'light';
   let fetchInterval = null;
-  let pendingUpload = null; // Store uploaded text until user adds question
+  let pendingUpload = null;
+  let currentSelection = null;
+  let selectionToolbar = null;
 
   // ── Init ──
   setTheme(currentTheme);
   loadSubjects();
   loadStats();
+  setupTextSelection();
 
   // ── Theme ──
   function setTheme(t) {
@@ -751,12 +779,10 @@
     if (paperBtn) paperBtn.classList.toggle('active', m === 'paper');
     
     const chatArea = document.getElementById('chat-area');
-    const paperArea = document.getElementById('paper-area');
     const inputBar = document.getElementById('input-bar');
     const paperSettings = document.getElementById('paper-settings');
     
     if (chatArea) chatArea.classList.toggle('hidden', m !== 'tutor');
-    if (paperArea) paperArea.classList.toggle('hidden', m !== 'paper');
     if (inputBar) inputBar.classList.toggle('hidden', m !== 'tutor');
     if (paperSettings) paperSettings.classList.toggle('hidden', m !== 'paper');
   }
@@ -771,6 +797,89 @@
     } catch(e) {
       const countElem = document.getElementById('doc-count');
       if (countElem) countElem.textContent = '—';
+    }
+  }
+
+  // ── Text Selection & Ask Zaahir ──
+  function setupTextSelection() {
+    document.addEventListener('mouseup', handleTextSelection);
+    document.addEventListener('touchend', handleTextSelection);
+  }
+
+  function handleTextSelection(e) {
+    const selection = window.getSelection();
+    const selectedText = selection.toString().trim();
+    
+    // Remove existing toolbar
+    if (selectionToolbar) {
+      selectionToolbar.remove();
+      selectionToolbar = null;
+    }
+    
+    if (selectedText.length > 0 && selectedText.length < 500) {
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      
+      selectionToolbar = document.createElement('div');
+      selectionToolbar.className = 'selection-toolbar';
+      selectionToolbar.innerHTML = `
+        <span>📖 Ask Zaahir about: "${selectedText.substring(0, 50)}${selectedText.length > 50 ? '...' : ''}"</span>
+        <button onclick="askAboutSelection('${escapeJs(selectedText)}')">Ask</button>
+      `;
+      selectionToolbar.style.position = 'fixed';
+      selectionToolbar.style.left = `${rect.left + window.scrollX}px`;
+      selectionToolbar.style.top = `${rect.top + window.scrollY - 40}px`;
+      document.body.appendChild(selectionToolbar);
+      
+      setTimeout(() => {
+        if (selectionToolbar) {
+          selectionToolbar.style.opacity = '1';
+        }
+      }, 10);
+    }
+  }
+  
+  function escapeJs(text) {
+    return text.replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n');
+  }
+  
+  async function askAboutSelection(selectedText) {
+    if (selectionToolbar) {
+      selectionToolbar.remove();
+      selectionToolbar = null;
+    }
+    
+    // Clear any current selection
+    window.getSelection().removeAllRanges();
+    
+    addMessage(`📌 **You asked about:**\n> ${selectedText}`, 'user');
+    
+    const thinking = document.createElement('div');
+    thinking.className = 'thinking';
+    thinking.id = 'thinking';
+    thinking.textContent = '🔍 Zaahir is explaining this section...';
+    document.getElementById('chat-area').appendChild(thinking);
+    document.getElementById('chat-area').scrollTop = 999999;
+    
+    try {
+      const res = await fetch('/ask-about-selection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selected_text: selectedText,
+          subject: getSubject(),
+          history: chatHistory.slice(-10)
+        })
+      });
+      
+      const data = await res.json();
+      document.getElementById('thinking')?.remove();
+      addMessage(data.answer, 'ai', [], data.model_used);
+      chatHistory.push({ role: 'assistant', content: data.answer });
+      
+    } catch (e) {
+      document.getElementById('thinking')?.remove();
+      addMessage('Sorry, I had trouble explaining that section. Please try again.', 'ai');
     }
   }
 
@@ -800,7 +909,20 @@
     div.className = 'msg ' + type;
 
     if (type === 'ai') {
-      div.innerHTML = renderMarkdown(content);
+      // Check if content contains a paper format (looks like an exam paper)
+      if (content.includes('NATIONAL SENIOR CERTIFICATE') || content.includes('GRADE 12')) {
+        div.innerHTML = `
+          <div class="paper-container">
+            <div class="paper-header">
+              <h2>📄 Generated Exam Paper</h2>
+            </div>
+            <div style="white-space: pre-wrap; font-family: monospace; line-height: 1.8;">${escapeHtml(content)}</div>
+          </div>
+        `;
+      } else {
+        div.innerHTML = renderMarkdown(content);
+      }
+      
       if (sources && sources.length > 0) {
         const s = document.createElement('div');
         s.className = 'sources';
@@ -819,6 +941,7 @@
 
     area.appendChild(div);
     area.scrollTop = area.scrollHeight;
+    return div;
   }
 
   async function sendMessage() {
@@ -827,10 +950,9 @@
     
     if (!msg && !pendingUpload) return;
     
-    // If there's a pending upload, prepend the extracted text
     if (pendingUpload) {
       msg = `I uploaded an image. Here's the text from it:\n\n${pendingUpload.text}\n\nMy question: ${msg || "Please solve this problem step by step."}`;
-      pendingUpload = null; // Clear after use
+      pendingUpload = null;
       input.placeholder = "Ask me anything...";
     }
     
@@ -877,7 +999,7 @@
     input.focus();
   }
 
-  // ── File Upload with Question ──
+  // ── File Upload ──
   async function uploadFile(input) {
     if (!input.files || !input.files[0]) return;
     
@@ -905,24 +1027,21 @@
       document.getElementById('upload-thinking')?.remove();
       
       if (data.success) {
-        // Store the extracted text
         pendingUpload = {
           text: data.extracted_text,
           filename: data.filename
         };
         
-        // Show preview and ask for question
-        const previewMsg = `✅ **Image uploaded successfully!**\n\n**Extracted text:**\n\`\`\`\n${data.extracted_text_preview}${data.extracted_text.length > 500 ? '\n...(truncated)' : ''}\n\`\`\`\n\n**What would you like me to do with this?**\n\nType your question below (e.g., "Solve this problem" or "Explain step by step") and click Send.`;
+        const previewMsg = `✅ **Image uploaded successfully!**\n\n**Extracted text:**\n\`\`\`\n${data.extracted_text_preview}${data.extracted_text.length > 500 ? '\n...(truncated)' : ''}\n\`\`\`\n\n**What would you like me to do with this?**\n\nType your question below and click Send.`;
         
         addMessage(previewMsg, 'ai');
         
-        // Focus the input and add placeholder
         const chatInput = document.getElementById('chat-input');
         chatInput.focus();
         chatInput.placeholder = "Type your question about the image (e.g., 'Solve this', 'Explain step by step')...";
         
       } else {
-        addMessage(`❌ Upload failed: ${data.message}\n\n${data.suggestion || 'Try taking a clearer photo with good lighting and make sure the text is in focus.'}`, 'ai');
+        addMessage(`❌ Upload failed: ${data.message}\n\nTry taking a clearer photo with good lighting.`, 'ai');
       }
     } catch (e) {
       document.getElementById('upload-thinking')?.remove();
@@ -930,6 +1049,63 @@
     }
     
     input.value = '';
+  }
+
+  // ── Paper Generation ──
+  async function generatePaper() {
+    const btn = document.getElementById('gen-btn');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '📄 Generating Paper... (30-60 sec)';
+    }
+    
+    addMessage("📝 **Generating your exam paper...**\n\nI'm creating an authentic DBE-style paper. This may take 30-60 seconds.", 'ai');
+    
+    const topicsRaw = document.getElementById('topics')?.value || '';
+    const topics = topicsRaw ? topicsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+    const includeMemo = document.getElementById('include-memo')?.checked || true;
+
+    try {
+      const res = await fetch('/generate-paper', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: getSubject(),
+          paper_number: parseInt(document.getElementById('paper-num')?.value || '1'),
+          total_marks: parseInt(document.getElementById('total-marks')?.value || '150'),
+          duration_hours: parseFloat(document.getElementById('duration')?.value || '3'),
+          topics: topics,
+          include_memo: includeMemo
+        })
+      });
+
+      const data = await res.json();
+      
+      // Display the paper in chat
+      let paperMessage = `📄 **${data.subject} Paper ${data.paper_number} - ${new Date(data.generated_at).getFullYear()}**\n\n`;
+      paperMessage += `**Marks:** ${data.total_marks} | **Duration:** ${data.duration_hours} hours\n\n`;
+      paperMessage += `---\n\n`;
+      paperMessage += data.paper;
+      
+      if (data.memo) {
+        paperMessage += `\n\n---\n\n📋 **MEMORANDUM**\n\n${data.memo}`;
+      }
+      
+      paperMessage += `\n\n---\n\n💡 **Need help?** Highlight any part of this paper and click "Ask Zaahir" to get an explanation! Or ask me: "Explain Question 1" or "Help me with the first question."`;
+      
+      addMessage(paperMessage, 'ai', [], data.model_used);
+      
+      // Ask if they want help
+      addMessage("Would you like me to help you understand any part of this paper? You can:\n\n• Highlight any text and click 'Ask Zaahir'\n• Ask me specific questions like 'Explain Question 2'\n• Ask for step-by-step solutions", 'ai');
+      
+    } catch (e) {
+      addMessage(`❌ Error generating paper: ${e.message}. Please try again.`, 'ai');
+    }
+    
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '📄 Generate Paper + Memo';
+    }
   }
 
   // ── Fetch Papers ──
@@ -949,6 +1125,8 @@
     statusDiv.innerHTML = '⏳ Starting download...';
     statusDiv.style.color = 'var(--accent)';
     
+    addMessage(`📥 **Fetching past paper...**\n\nI'm downloading ${subject} Paper ${paper_number} (${year}) from the DBE website.`, 'ai');
+    
     try {
       const res = await fetch('/fetch-papers', {
         method: 'POST',
@@ -966,6 +1144,7 @@
       statusDiv.style.color = '#f66';
       btn.disabled = false;
       btn.textContent = '⬇️ Fetch Now';
+      addMessage(`❌ Failed to fetch paper: ${e.message}`, 'ai');
     }
   }
 
@@ -981,10 +1160,8 @@
       
       if (data.status === 'downloading') {
         statusDiv.innerHTML = `📥 ${data.message}<br>${data.current_file || ''}`;
-        statusDiv.style.color = 'var(--accent)';
       } else if (data.status === 'ingesting') {
         statusDiv.innerHTML = `🔄 ${data.message}`;
-        statusDiv.style.color = 'var(--accent)';
       } else if (data.status === 'complete') {
         statusDiv.innerHTML = `✅ ${data.message}<br>Added: ${data.completed.length} files`;
         statusDiv.style.color = '#3ddc84';
@@ -994,11 +1171,7 @@
           btn.textContent = '⬇️ Fetch Now';
         }
         loadStats();
-        
-        if (data.fetched_subject && data.fetched_paper) {
-          const paperMsg = `📚 **New Paper Added!**\n\nI've just added **${data.fetched_subject} Paper ${data.fetched_paper} (${data.fetched_year})** to my knowledge base. You can now ask me questions about this paper! 🎓`;
-          addMessage(paperMsg, 'ai', [], 'System');
-        }
+        addMessage(`✅ **Paper successfully added!**\n\nI've added ${data.completed.length} file(s) to my knowledge base. You can now ask me questions about this paper! 🎓`, 'ai');
       } else if (data.status === 'error') {
         statusDiv.innerHTML = `❌ ${data.message}`;
         statusDiv.style.color = '#f66';
@@ -1007,67 +1180,17 @@
           btn.disabled = false;
           btn.textContent = '⬇️ Fetch Now';
         }
+        addMessage(`❌ Failed to fetch: ${data.message}`, 'ai');
       }
     } catch (e) {
       console.error('Status check failed', e);
     }
   }
 
-  // ── Paper Generation ──
-  async function generatePaper() {
-    const btn = document.getElementById('gen-btn');
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = 'Generating... (1-3 min)';
-    }
-
-    const topicsRaw = document.getElementById('topics')?.value || '';
-    const topics = topicsRaw ? topicsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
-
-    try {
-      const res = await fetch('/generate-paper', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          subject: getSubject(),
-          total_marks: parseInt(document.getElementById('total-marks')?.value || '150'),
-          duration_hours: parseFloat(document.getElementById('duration')?.value || '3'),
-          paper_number: parseInt(document.getElementById('paper-num')?.value || '1'),
-          topics: topics
-        })
-      });
-
-      const data = await res.json();
-      const out = document.getElementById('paper-output');
-      if (out) {
-        out.innerHTML = `
-          <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">
-            Generated by ${data.model_used} · ${new Date(data.generated_at).toLocaleString()}
-          </div>
-          <div class="paper-box">${escHtml(data.paper)}</div>
-          <button class="copy-btn" onclick="copyPaper()">Copy to Clipboard</button>
-        `;
-        window._paper = data.paper;
-      }
-    } catch (e) {
-      const out = document.getElementById('paper-output');
-      if (out) out.innerHTML = '<p style="color:#f66;font-size:13px;">Error generating paper. Make sure app.py is running.</p>';
-    }
-
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = 'Generate Paper + Memo';
-    }
-  }
-
-  function copyPaper() {
-    navigator.clipboard.writeText(window._paper || '').then(() => alert('Copied to clipboard!'));
-  }
-
-  function escHtml(t) {
-    const d = document.createElement('div');
-    d.appendChild(document.createTextNode(t));
-    return d.innerHTML;
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(text));
+    return div.innerHTML;
   }
 
   // Auto-resize textarea
