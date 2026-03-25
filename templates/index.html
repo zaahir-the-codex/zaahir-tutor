@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Zaahir's Tutor</title>
+  <style>
+    :root[data-theme="light"] {
+      --bg: #f4f6fb;
+      --bg2: #ffffff;
+      --bg3: #eef1f8;
+      --border: #dde2f0;
+      --text: #1a1d2e;
+      --text2: #555c7a;
+      --text3: #888faa;
+      --accent: #4a6adc;
+      --accent2: #3a5bcc;
+      --accent-bg: #eef1fb;
+      --user-bg: #4a6adc;
+      --user-text: #ffffff;
+      --ai-bg: #ffffff;
+      --ai-border: #dde2f0;
+      --input-bg: #ffffff;
+      --header-bg: #ffffff;
+      --menu-bg: #ffffff;
+      --tag-bg: #eef1f8;
+      --tag-text: #555c7a;
+      --shadow: 0 2px 12px rgba(74,106,220,0.08);
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0f1117;
+      --bg2: #161925;
+      --bg3: #1e2140;
+      --border: #2d3148;
+      --text: #e8e8f0;
+      --text2: #9099bb;
+      --text3: #555c7a;
+      --accent: #7c9eff;
+      --accent2: #6a8aee;
+      --accent-bg: #1e2a5e;
+      --user-bg: #1e2a5e;
+      --user-text: #c8d8ff;
+      --ai-bg: #161925;
+      --ai-border: #2a2d45;
+      --input-bg: #1e2140;
+      --header-bg: #1a1d2e;
+      --menu-bg: #13162b;
+      --tag-bg: #1a1d30;
+      --tag-text: #666;
+      --shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+
+    :root[data-theme="green"] {
+      --bg: #0a0f0d;
+      --bg2: #0f1a14;
+      --bg3: #162a1e;
+      --border: #1e3d2a;
+      --text: #e0f0e8;
+      --text2: #7aaa90;
+      --text3: #4a7a60;
+      --accent: #3ddc84;
+      --accent2: #2dcc74;
+      --accent-bg: #0f2a1e;
+      --user-bg: #0f2a1e;
+      --user-text: #a0f0c0;
+      --ai-bg: #0f1a14;
+      --ai-border: #1e3d2a;
+      --input-bg: #162a1e;
+      --header-bg: #0f1a14;
+      --menu-bg: #0a0f0d;
+      --tag-bg: #0f2a1e;
+      --tag-text: #4a7a60;
+      --shadow: 0 2px 12px rgba(0,0,0,0.4);
+    }
+
+    :root[data-theme="purple"] {
+      --bg: #0d0a14;
+      --bg2: #160f22;
+      --bg3: #1e1530;
+      --border: #2d1f48;
+      --text: #ede8f8;
+      --text2: #9980cc;
+      --text3: #5a4a80;
+      --accent: #b06aff;
+      --accent2: #9a5aee;
+      --accent-bg: #2a1a5e;
+      --user-bg: #2a1a5e;
+      --user-text: #d8c0ff;
+      --ai-bg: #160f22;
+      --ai-border: #2d1f48;
+      --input-bg: #1e1530;
+      --header-bg: #160f22;
+      --menu-bg: #0d0a14;
+      --tag-bg: #1a0f30;
+      --tag-text: #5a4a80;
+      --shadow: 0 2px 12px rgba(0,0,0,0.4);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .header {
+      background: var(--header-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+
+    .header-left { display: flex; align-items: center; gap: 12px; }
+
+    .menu-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text2);
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .menu-btn:hover { background: var(--bg3); }
+
+    .header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.3px;
+    }
+
+    .header .sub {
+      font-size: 11px;
+      color: var(--text3);
+      margin-top: 2px;
+    }
+
+    .stats-pill {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 11px;
+      color: var(--text3);
+      white-space: nowrap;
+    }
+    .stats-pill span { color: var(--accent); font-weight: 600; }
+
+    .menu-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 200;
+    }
+    .menu-overlay.open { display: block; }
+
+    .menu-panel {
+      position: fixed;
+      top: 0;
+      left: -320px;
+      width: 300px;
+      height: 100vh;
+      background: var(--menu-bg);
+      border-right: 1px solid var(--border);
+      z-index: 201;
+      overflow-y: auto;
+      transition: left 0.25s cubic-bezier(0.4,0,0.2,1);
+      padding: 0 0 40px 0;
+    }
+    .menu-panel.open { left: 0; }
+
+    .menu-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .menu-header h2 { font-size: 15px; font-weight: 600; color: var(--text); }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text3);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .close-btn:hover { background: var(--bg3); color: var(--text); }
+
+    .menu-section {
+      padding: 14px 16px 0;
+    }
+
+    .menu-section-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text3);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .mode-btn {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text2);
+      font-size: 13px;
+      cursor: pointer;
+      text-align: left;
+      margin-bottom: 6px;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .mode-btn:hover { background: var(--bg3); }
+    .mode-btn.active {
+      background: var(--accent-bg);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .menu-select, .menu-input {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 9px 12px;
+      font-size: 13px;
+      margin-bottom: 8px;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .menu-select:focus, .menu-input:focus { border-color: var(--accent); }
+
+    .field-label {
+      display: block;
+      font-size: 11px;
+      color: var(--text3);
+      margin-bottom: 4px;
+      margin-top: 8px;
+    }
+
+    .theme-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-bottom: 8px;
+    }
+
+    .theme-btn {
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 500;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .theme-btn.t-light { background: #f4f6fb; color: #1a1d2e; border-color: #dde2f0; }
+    .theme-btn.t-dark { background: #0f1117; color: #e8e8f0; border-color: #2d3148; }
+    .theme-btn.t-green { background: #0a0f0d; color: #3ddc84; border-color: #1e3d2a; }
+    .theme-btn.t-purple { background: #0d0a14; color: #b06aff; border-color: #2d1f48; }
+    .theme-btn.active { border-color: var(--accent) !important; box-shadow: 0 0 0 2px var(--accent); }
+
+    .gen-btn {
+      width: 100%;
+      padding: 11px;
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+      font-family: inherit;
+      transition: opacity 0.15s;
+    }
+    .gen-btn:hover { opacity: 0.88; }
+    .gen-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 57px);
+    }
+
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .msg {
+      max-width: 85%;
+      line-height: 1.7;
+      font-size: 14px;
+      animation: fadeUp 0.2s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg.user {
+      align-self: flex-end;
+      background: var(--user-bg);
+      color: var(--user-text);
+      border-radius: 16px 16px 4px 16px;
+      padding: 11px 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .msg.ai {
+      align-self: flex-start;
+      background: var(--ai-bg);
+      border: 1px solid var(--ai-border);
+      border-radius: 4px 16px 16px 16px;
+      padding: 14px 16px;
+      width: 100%;
+      max-width: 100%;
+      box-shadow: var(--shadow);
+    }
+
+    .msg.ai h1, .msg.ai h2, .msg.ai h3 {
+      color: var(--accent);
+      margin: 12px 0 5px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .msg.ai p { margin-bottom: 7px; }
+    .msg.ai ul, .msg.ai ol { padding-left: 20px; margin-bottom: 7px; }
+    .msg.ai li { margin-bottom: 3px; }
+    .msg.ai strong { color: var(--text); }
+    .msg.ai code {
+      background: var(--bg3);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 13px;
+      color: var(--accent);
+    }
+
+    .sources {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text3);
+    }
+    .source-tag {
+      display: inline-block;
+      background: var(--tag-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 7px;
+      margin: 2px 3px 2px 0;
+      color: var(--tag-text);
+    }
+    .model-tag { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+    .thinking {
+      align-self: flex-start;
+      color: var(--text3);
+      font-style: italic;
+      font-size: 13px;
+      padding: 8px 12px;
+      background: var(--ai-bg);
+      border: 1px solid var(--ai-border);
+      border-radius: 4px 16px 16px 16px;
+      animation: pulse 1.5s ease infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .input-bar {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--header-bg);
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .chat-input {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      padding: 11px 15px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      height: 46px;
+      max-height: 120px;
+      transition: border-color 0.15s;
+      line-height: 1.5;
+    }
+    .chat-input:focus { border-color: var(--accent); }
+    .chat-input::placeholder { color: var(--text3); }
+
+    .send-btn {
+      padding: 11px 20px;
+      background: var(--accent);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity 0.15s;
+      white-space: nowrap;
+      height: 46px;
+    }
+    .send-btn:hover { opacity: 0.88; }
+    .send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .upload-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 11px 16px;
+      cursor: pointer;
+      font-size: 16px;
+      border-radius: 12px;
+      transition: all 0.15s;
+    }
+    .upload-btn:hover { background: var(--accent-bg); color: var(--accent); }
+
+    .paper-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .paper-area h2 { font-size: 15px; color: var(--accent); margin-bottom: 6px; }
+    .paper-area .hint { font-size: 13px; color: var(--text3); margin-bottom: 16px; }
+
+    .paper-box {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      white-space: pre-wrap;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text);
+    }
+
+    .copy-btn {
+      margin-top: 10px;
+      padding: 8px 18px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text2);
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .copy-btn:hover { background: var(--accent-bg); color: var(--accent); }
+
+    .hidden { display: none; }
+
+    .welcome-tip {
+      background: var(--ai-bg);
+      border: 1px solid var(--ai-border);
+      border-radius: 4px 16px 16px 16px;
+      padding: 16px 18px;
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.8;
+      max-width: 100%;
+      box-shadow: var(--shadow);
+    }
+    .welcome-tip strong { color: var(--accent); }
+
+    /* Desktop layout - sidebar is hidden, we use menu panel instead */
+    .sidebar-desktop {
+      display: none;
+    }
+
+    /* On desktop, make menu button always visible */
+    .menu-btn {
+      display: flex !important;
+    }
+
+    /* Chat area full width on all devices */
+    .layout {
+      display: block;
+    }
+
+    .msg {
+      max-width: 92%;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 12px 0;
+    }
+
+    .fetch-status {
+      font-size: 11px;
+      color: var(--text3);
+      margin-top: 8px;
+      padding: 6px;
+      background: var(--bg3);
+      border-radius: 6px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <button class="menu-btn" onclick="openMenu()" title="Menu">☰</button>
+    <div>
+      <h1>Zaahir's Tutor</h1>
+      <div class="sub">Grade 12 · SA CAPS Curriculum</div>
+    </div>
+  </div>
+  <div class="stats-pill">
+    <span id="doc-count">...</span> chunks
+  </div>
+</div>
+
+<!-- MENU OVERLAY -->
+<div class="menu-overlay" id="menu-overlay" onclick="closeMenu()"></div>
+
+<!-- SLIDE-IN MENU PANEL (works on all devices) -->
+<div class="menu-panel" id="menu-panel">
+  <div class="menu-header">
+    <h2>Menu</h2>
+    <button class="close-btn" onclick="closeMenu()">✕</button>
+  </div>
+
+  <div class="menu-section">
+    <div class="menu-section-label">Mode</div>
+    <button class="mode-btn active" id="mb-tutor" onclick="setMode('tutor'); closeMenu()">💬 Tutor Chat</button>
+    <button class="mode-btn" id="mb-paper" onclick="setMode('paper'); closeMenu()">📝 Generate Paper</button>
+  </div>
+
+  <div class="menu-section">
+    <div class="menu-section-label">Subject</div>
+    <select class="menu-select" id="subject-select"></select>
+  </div>
+
+  <div id="paper-settings" class="menu-section hidden">
+    <hr class="divider">
+    <div class="menu-section-label">Paper Settings</div>
+    <span class="field-label">Total Marks</span>
+    <input type="number" class="menu-input" id="total-marks" value="150" min="50" max="300">
+    <span class="field-label">Duration (hours)</span>
+    <input type="number" class="menu-input" id="duration" value="3" min="1" max="4" step="0.5">
+    <span class="field-label">Paper Number</span>
+    <select class="menu-select" id="paper-num">
+      <option value="1">Paper 1</option>
+      <option value="2">Paper 2</option>
+      <option value="3">Paper 3</option>
+    </select>
+    <span class="field-label">Focus Topics (optional)</span>
+    <input type="text" class="menu-input" id="topics" placeholder="e.g. Algebra, Trigonometry">
+    <button class="gen-btn" id="gen-btn" onclick="generatePaper(); closeMenu()">Generate Paper + Memo</button>
+  </div>
+
+  <div class="menu-section">
+    <hr class="divider">
+    <div class="menu-section-label">📥 Fetch Papers</div>
+    <select class="menu-select" id="fetch-subject">
+      <option>Mathematics</option>
+      <option>Physical Sciences</option>
+      <option>Life Sciences</option>
+      <option>Business Studies</option>
+      <option>Dramatic Arts</option>
+    </select>
+    <select class="menu-select" id="fetch-year">
+      <option>2024</option>
+      <option>2023</option>
+      <option>2022</option>
+    </select>
+    <select class="menu-select" id="fetch-paper">
+      <option value="1">Paper 1</option>
+      <option value="2">Paper 2</option>
+      <option value="3">Paper 3</option>
+    </select>
+    <label style="display:flex; align-items:center; gap:8px; margin:8px 0;">
+      <input type="checkbox" id="fetch-memo" checked> Include Memo
+    </label>
+    <button class="gen-btn" id="fetch-btn" onclick="fetchPapers()">⬇️ Fetch Now</button>
+    <div id="fetch-status" class="fetch-status"></div>
+  </div>
+
+  <div class="menu-section">
+    <hr class="divider">
+    <div class="menu-section-label">Theme</div>
+    <div class="theme-grid">
+      <button class="theme-btn t-light" onclick="setTheme('light')">☀️ Light</button>
+      <button class="theme-btn t-dark" onclick="setTheme('dark')">🌙 Dark</button>
+      <button class="theme-btn t-green" onclick="setTheme('green')">🌿 Green</button>
+      <button class="theme-btn t-purple" onclick="setTheme('purple')">💜 Purple</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="layout">
+  <div class="main">
+    <div class="chat-area" id="chat-area">
+      <div class="welcome-tip">
+        <strong>Welcome to Zaahir's Tutor! 🎓</strong><br><br>
+        I'm your personal Grade 12 AI tutor, trained on the South African CAPS
+        curriculum and NSC past papers. I can explain any concept, work through
+        problems step by step, and help you prepare for your final exams.<br><br>
+        <strong>📸 New:</strong> Upload a photo of a handwritten problem using the 📷 button!<br>
+        <strong>📥 New:</strong> Fetch past papers directly from the DBE website using the menu.<br><br>
+        Select your subject in the menu and ask me anything!
+      </div>
+    </div>
+
+    <div class="paper-area hidden" id="paper-area">
+      <h2>Generated Exam Paper</h2>
+      <p class="hint">Configure your settings in the menu then click Generate Paper + Memo.</p>
+      <div id="paper-output"></div>
+    </div>
+
+    <div class="input-bar" id="input-bar">
+      <textarea
+        class="chat-input"
+        id="chat-input"
+        placeholder="Ask me anything... or upload a photo of a problem!"
+        onkeydown="handleKey(event)"
+      ></textarea>
+      <div class="button-group">
+        <label for="file-upload" class="upload-btn" title="Upload photo or document">📷</label>
+        <input type="file" id="file-upload" accept="image/*,.pdf,.txt" style="display: none;" onchange="uploadFile(this)">
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── State ──
+  let mode = 'tutor';
+  let chatHistory = [];
+  let currentTheme = localStorage.getItem('zt-theme') || 'light';
+  let fetchInterval = null;
+
+  // ── Init ──
+  setTheme(currentTheme);
+  loadSubjects();
+  loadStats();
+
+  // ── Theme ──
+  function setTheme(t) {
+    currentTheme = t;
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('zt-theme', t);
+    document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.theme-btn.t-' + t).forEach(b => b.classList.add('active'));
+  }
+
+  // ── Menu ──
+  function openMenu() {
+    document.getElementById('menu-overlay').classList.add('open');
+    document.getElementById('menu-panel').classList.add('open');
+  }
+  function closeMenu() {
+    document.getElementById('menu-overlay').classList.remove('open');
+    document.getElementById('menu-panel').classList.remove('open');
+  }
+
+  // ── Subjects ──
+  async function loadSubjects() {
+    try {
+      const res = await fetch('/subjects');
+      const data = await res.json();
+      const subjects = data.subjects;
+      const select = document.getElementById('subject-select');
+      if (select) select.innerHTML = subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+    } catch(e) {
+      console.error('Could not load subjects', e);
+    }
+  }
+
+  function getSubject() {
+    const select = document.getElementById('subject-select');
+    return select ? select.value : 'Mathematics';
+  }
+
+  // ── Mode ──
+  function setMode(m) {
+    mode = m;
+    const tutorBtn = document.getElementById('mb-tutor');
+    const paperBtn = document.getElementById('mb-paper');
+    if (tutorBtn) tutorBtn.classList.toggle('active', m === 'tutor');
+    if (paperBtn) paperBtn.classList.toggle('active', m === 'paper');
+    
+    const chatArea = document.getElementById('chat-area');
+    const paperArea = document.getElementById('paper-area');
+    const inputBar = document.getElementById('input-bar');
+    const paperSettings = document.getElementById('paper-settings');
+    
+    if (chatArea) chatArea.classList.toggle('hidden', m !== 'tutor');
+    if (paperArea) paperArea.classList.toggle('hidden', m !== 'paper');
+    if (inputBar) inputBar.classList.toggle('hidden', m !== 'tutor');
+    if (paperSettings) paperSettings.classList.toggle('hidden', m !== 'paper');
+  }
+
+  // ── Stats ──
+  async function loadStats() {
+    try {
+      const res = await fetch('/stats');
+      const d = await res.json();
+      const countElem = document.getElementById('doc-count');
+      if (countElem) countElem.textContent = d.total_chunks > 0 ? d.total_chunks.toLocaleString() : '0';
+    } catch(e) {
+      const countElem = document.getElementById('doc-count');
+      if (countElem) countElem.textContent = '—';
+    }
+  }
+
+  // ── Chat ──
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function renderMarkdown(text) {
+    return text
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`(.+?)`/g, '<code>$1</code>')
+      .replace(/\n/g, '<br>');
+  }
+
+  function addMessage(content, type, sources, model) {
+    const area = document.getElementById('chat-area');
+    if (!area) return;
+    const div = document.createElement('div');
+    div.className = 'msg ' + type;
+
+    if (type === 'ai') {
+      div.innerHTML = renderMarkdown(content);
+      if (sources && sources.length > 0) {
+        const s = document.createElement('div');
+        s.className = 'sources';
+        s.innerHTML = '📚 ' + sources.map(x => `<span class="source-tag">${x}</span>`).join('');
+        div.appendChild(s);
+      }
+      if (model) {
+        const m = document.createElement('div');
+        m.className = 'model-tag';
+        m.textContent = 'Model: ' + model;
+        div.appendChild(m);
+      }
+    } else {
+      div.textContent = content;
+    }
+
+    area.appendChild(div);
+    area.scrollTop = area.scrollHeight;
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    input.value = '';
+    input.style.height = '46px';
+    addMessage(msg, 'user');
+
+    chatHistory.push({ role: 'user', content: msg });
+
+    const sendBtn = document.getElementById('send-btn');
+    if (sendBtn) sendBtn.disabled = true;
+
+    const chatArea = document.getElementById('chat-area');
+    const thinking = document.createElement('div');
+    thinking.className = 'thinking';
+    thinking.id = 'thinking';
+    thinking.textContent = '✦ Thinking...';
+    if (chatArea) chatArea.appendChild(thinking);
+    if (chatArea) chatArea.scrollTop = 999999;
+
+    try {
+      const res = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: msg,
+          subject: getSubject(),
+          history: chatHistory.slice(-20)
+        })
+      });
+
+      const data = await res.json();
+      const thinkingElem = document.getElementById('thinking');
+      if (thinkingElem) thinkingElem.remove();
+      addMessage(data.answer, 'ai', data.sources, data.model_used);
+      chatHistory.push({ role: 'assistant', content: data.answer });
+    } catch (e) {
+      const thinkingElem = document.getElementById('thinking');
+      if (thinkingElem) thinkingElem.remove();
+      addMessage('Error: Could not reach the server. Make sure app.py is running.', 'ai');
+    }
+
+    if (sendBtn) sendBtn.disabled = false;
+    input.focus();
+  }
+
+  // ── File Upload ──
+  async function uploadFile(input) {
+    if (!input.files || !input.files[0]) return;
+    
+    const file = input.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('subject', getSubject());
+    
+    addMessage(`📤 Uploading "${file.name}"...`, 'user');
+    
+    const thinking = document.createElement('div');
+    thinking.className = 'thinking';
+    thinking.id = 'upload-thinking';
+    thinking.textContent = '🔍 Processing image... extracting text...';
+    document.getElementById('chat-area').appendChild(thinking);
+    document.getElementById('chat-area').scrollTop = 999999;
+    
+    try {
+      const res = await fetch('/upload', {
+        method: 'POST',
+        body: formData
+      });
+      
+      const data = await res.json();
+      document.getElementById('upload-thinking')?.remove();
+      
+      if (data.success) {
+        addMessage(`✅ ${data.message}\n\n**Extracted text preview:**\n${data.extracted_text_preview}\n\nWhat would you like me to help you with from this?`, 'ai');
+        
+        chatHistory.push({ role: 'user', content: `I uploaded a file: ${file.name}. Here's what it contains:\n${data.extracted_text_preview}\n\nPlease help me solve/understand this.` });
+        
+      } else {
+        addMessage(`❌ Upload failed: ${data.message}\n\nTry taking a clearer photo of the problem.`, 'ai');
+      }
+    } catch (e) {
+      document.getElementById('upload-thinking')?.remove();
+      addMessage(`❌ Error uploading file. Make sure the server is running.`, 'ai');
+    }
+    
+    input.value = '';
+  }
+
+  // ── Fetch Papers ──
+  async function fetchPapers() {
+    const subject = document.getElementById('fetch-subject').value;
+    const year = parseInt(document.getElementById('fetch-year').value);
+    const paper_number = parseInt(document.getElementById('fetch-paper').value);
+    const include_memo = document.getElementById('fetch-memo').checked;
+    
+    const btn = document.getElementById('fetch-btn');
+    const statusDiv = document.getElementById('fetch-status');
+    
+    if (!btn || !statusDiv) return;
+    
+    btn.disabled = true;
+    btn.textContent = 'Fetching...';
+    statusDiv.innerHTML = '⏳ Starting download...';
+    statusDiv.style.color = 'var(--accent)';
+    
+    try {
+      const res = await fetch('/fetch-papers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject, year, paper_number, include_memo })
+      });
+      
+      if (!res.ok) throw new Error('Failed to start fetch');
+      
+      if (fetchInterval) clearInterval(fetchInterval);
+      fetchInterval = setInterval(() => checkFetchStatus(), 1000);
+      
+    } catch (e) {
+      statusDiv.innerHTML = '❌ Error starting fetch';
+      statusDiv.style.color = '#f66';
+      btn.disabled = false;
+      btn.textContent = '⬇️ Fetch Now';
+    }
+  }
+
+  async function checkFetchStatus() {
+    const statusDiv = document.getElementById('fetch-status');
+    const btn = document.getElementById('fetch-btn');
+    
+    if (!statusDiv) return;
+    
+    try {
+      const res = await fetch('/fetch-status');
+      const data = await res.json();
+      
+      if (data.status === 'downloading') {
+        statusDiv.innerHTML = `📥 ${data.message}<br>${data.current_file || ''}`;
+        statusDiv.style.color = 'var(--accent)';
+      } else if (data.status === 'ingesting') {
+        statusDiv.innerHTML = `🔄 ${data.message}`;
+        statusDiv.style.color = 'var(--accent)';
+      } else if (data.status === 'complete') {
+        statusDiv.innerHTML = `✅ ${data.message}<br>Added: ${data.completed.length} files`;
+        statusDiv.style.color = '#3ddc84';
+        if (fetchInterval) clearInterval(fetchInterval);
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '⬇️ Fetch Now';
+        }
+        loadStats();
+        
+        if (data.fetched_subject && data.fetched_paper) {
+          const paperMsg = `📚 **New Paper Added!**\n\nI've just added **${data.fetched_subject} Paper ${data.fetched_paper} (${data.fetched_year})** to my knowledge base. You can now ask me questions about this paper! 🎓`;
+          addMessage(paperMsg, 'ai', [], 'System');
+        }
+      } else if (data.status === 'error') {
+        statusDiv.innerHTML = `❌ ${data.message}`;
+        statusDiv.style.color = '#f66';
+        if (fetchInterval) clearInterval(fetchInterval);
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '⬇️ Fetch Now';
+        }
+      }
+    } catch (e) {
+      console.error('Status check failed', e);
+    }
+  }
+
+  // ── Paper Generation ──
+  async function generatePaper() {
+    const btn = document.getElementById('gen-btn');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Generating... (1-3 min)';
+    }
+
+    const topicsRaw = document.getElementById('topics')?.value || '';
+    const topics = topicsRaw ? topicsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+    try {
+      const res = await fetch('/generate-paper', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: getSubject(),
+          total_marks: parseInt(document.getElementById('total-marks')?.value || '150'),
+          duration_hours: parseFloat(document.getElementById('duration')?.value || '3'),
+          paper_number: parseInt(document.getElementById('paper-num')?.value || '1'),
+          topics: topics
+        })
+      });
+
+      const data = await res.json();
+      const out = document.getElementById('paper-output');
+      if (out) {
+        out.innerHTML = `
+          <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">
+            Generated by ${data.model_used} · ${new Date(data.generated_at).toLocaleString()}
+          </div>
+          <div class="paper-box">${escHtml(data.paper)}</div>
+          <button class="copy-btn" onclick="copyPaper()">Copy to Clipboard</button>
+        `;
+        window._paper = data.paper;
+      }
+    } catch (e) {
+      const out = document.getElementById('paper-output');
+      if (out) out.innerHTML = '<p style="color:#f66;font-size:13px;">Error generating paper. Make sure app.py is running.</p>';
+    }
+
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Generate Paper + Memo';
+    }
+  }
+
+  function copyPaper() {
+    navigator.clipboard.writeText(window._paper || '').then(() => alert('Copied to clipboard!'));
+  }
+
+  function escHtml(t) {
+    const d = document.createElement('div');
+    d.appendChild(document.createTextNode(t));
+    return d.innerHTML;
+  }
+
+  // Auto-resize textarea
+  const chatInput = document.getElementById('chat-input');
+  if (chatInput) {
+    chatInput.addEventListener('input', function() {
+      this.style.height = '46px';
+      this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+  }
+</script>
+</body>
+</html>
