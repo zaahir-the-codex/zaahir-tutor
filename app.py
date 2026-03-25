@@ -20,9 +20,22 @@ import io
 
 load_dotenv()
 
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3:latest")
-EMBED_MODEL = os.getenv("EMBED_MODEL", "nomic-embed-text")
+# ============================================================
+# FORCE GROQ FOR RENDER - NO OLLAMA
+# ============================================================
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_BASE_URL = "https://api.groq.com/openai/v1"
+GROQ_MODEL = "llama3-8b-8192"
+
+# Print startup info (visible in Render logs)
+print("=" * 50)
+print("Zaahir's Tutor Starting...")
+print(f"GROQ_API_KEY present: {'YES' if GROQ_API_KEY else 'NO'}")
+print(f"GROQ_API_KEY first 10 chars: {GROQ_API_KEY[:10] if GROQ_API_KEY else 'NOT SET'}")
+print(f"Using model: {GROQ_MODEL}")
+print("=" * 50)
+
+# Settings for file storage
 CHROMA_DB_PATH = os.getenv("CHROMA_DB_PATH", "./vectordb")
 DOCUMENTS_PATH = os.getenv("DOCUMENTS_PATH", "./documents")
 
@@ -36,6 +49,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 chroma_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
 
+# Available subjects
 SUBJECTS = {
     "Mathematics": "Mathematics",
     "Mathematical Literacy": "Mathematical%20Literacy", 
@@ -94,7 +108,6 @@ def extract_text_from_image(image_bytes: bytes) -> str:
     """Extract text from an image using OCR."""
     try:
         image = Image.open(io.BytesIO(image_bytes))
-        # Convert to RGB if needed
         if image.mode not in ('L', 'RGB'):
             image = image.convert('RGB')
         text = pytesseract.image_to_string(image)
@@ -109,62 +122,59 @@ def extract_text_from_file(file_bytes: bytes, filename: str) -> str:
     
     if ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']:
         return extract_text_from_image(file_bytes)
-    elif ext == 'pdf':
-        # For PDFs, we'll just return a note that PDF upload is supported
-        # but for full OCR we'd need pdf2image which is heavy
-        return "[PDF uploaded. For best results, upload images of specific questions.]"
     elif ext == 'txt':
         return file_bytes.decode('utf-8', errors='ignore')
     else:
         return f"[File uploaded: {filename}. Content extraction not fully supported yet.]"
 
 def get_embedding(text: str) -> list:
-    response = requests.post(
-        f"{OLLAMA_BASE_URL}/api/embeddings",
-        json={"model": EMBED_MODEL, "prompt": text[:2000]}  # Limit text length
-    )
-    response.raise_for_status()
-    return response.json()["embedding"]
+    """Get embedding - simplified for now."""
+    # Return a dummy embedding (we'll improve this later)
+    return [0.0] * 384
 
 def search_documents(query: str, n_results: int = 5) -> list:
+    """Search for relevant documents."""
     try:
         collection = chroma_client.get_collection("grade12_documents")
-    except Exception:
+        # For now, return empty since no docs on cloud
         return []
-    try:
-        query_embedding = get_embedding(query)
-        results = collection.query(
-            query_embeddings=[query_embedding],
-            n_results=n_results
-        )
-        chunks = []
-        for i, doc in enumerate(results["documents"][0]):
-            source = results["metadatas"][0][i].get("source", "Unknown")
-            chunks.append(f"[From: {source}]\n{doc}")
-        return chunks
     except Exception:
         return []
 
-def ask_ollama(system_prompt: str, history: list, user_message: str) -> str:
+def ask_groq(system_prompt: str, history: list, user_message: str) -> str:
+    """Send message to Groq API."""
     messages = [{"role": "system", "content": system_prompt}]
     for item in history:
         messages.append({"role": item["role"], "content": item["content"]})
     messages.append({"role": "user", "content": user_message})
 
-    payload = {
-        "model": OLLAMA_MODEL,
-        "messages": messages,
-        "stream": False
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
     }
-    response = requests.post(
-        f"{OLLAMA_BASE_URL}/api/chat",
-        json=payload,
-        timeout=300
-    )
-    response.raise_for_status()
-    return response.json()["message"]["content"]
+    
+    payload = {
+        "model": GROQ_MODEL,
+        "messages": messages,
+        "temperature": 0.7,
+        "max_tokens": 2000
+    }
+    
+    try:
+        response = requests.post(
+            f"{GROQ_BASE_URL}/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=60
+        )
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        print(f"Groq API error: {e}")
+        return f"Sorry, I'm having trouble connecting to the AI service. Error: {str(e)}"
 
 def run_ingestion():
+    """Run the ingestion script."""
     try:
         result = subprocess.run(
             ["python", "ingest.py"],
@@ -179,6 +189,7 @@ def run_ingestion():
         return False
 
 async def fetch_papers_task(subject: str, year: int, paper_number: int, include_memo: bool):
+    """Background task to fetch papers."""
     global fetch_progress
     
     subject_url_name = SUBJECTS.get(subject, subject.replace(" ", "%20"))
@@ -190,7 +201,6 @@ async def fetch_papers_task(subject: str, year: int, paper_number: int, include_
     paper_urls = [
         f"{base_url}/{subject_url_name}%20P{paper_number}%20Nov%20{year}%20Eng.pdf",
         f"{base_url}/{subject_url_name}%20P{paper_number}%20Nov%20{year}%20Eng.pdf?ver=2025-03-04-110202-327",
-        f"{base_url}/{subject_url_name}%20P{paper_number}%20Nov%20{year}%20English.pdf",
     ]
     
     paper_dest = Path(DOCUMENTS_PATH) / "past_papers" / f"{subject} P{paper_number} Nov {year} Eng.pdf"
@@ -200,7 +210,6 @@ async def fetch_papers_task(subject: str, year: int, paper_number: int, include_
         memo_urls = [
             f"{base_url}/{subject_url_name}%20P{paper_number}%20Nov%20{year}%20MG%20Afr%20%26%20Eng.pdf",
             f"{base_url}/{subject_url_name}%20P{paper_number}%20Nov%20{year}%20Memo%20Eng.pdf",
-            f"{base_url}/{subject_url_name}%20P{paper_number}%20Nov%20{year}%20MG.pdf",
         ]
         memo_dest = Path(DOCUMENTS_PATH) / "memos" / f"{subject} P{paper_number} Nov {year} MG.pdf"
         files_to_fetch.append((memo_urls, memo_dest, "memo"))
@@ -219,7 +228,7 @@ async def fetch_papers_task(subject: str, year: int, paper_number: int, include_
         downloaded = False
         for url in urls:
             try:
-                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+                headers = {'User-Agent': 'Mozilla/5.0'}
                 response = requests.get(url, headers=headers, timeout=60)
                 if response.status_code == 200:
                     with open(dest, 'wb') as f:
@@ -286,36 +295,29 @@ async def upload_file(
     file: UploadFile = File(...),
     subject: str = Form("Mathematics")
 ):
-    """Upload a file (image, PDF, document) and extract text from it."""
+    """Upload a file (image, document) and extract text."""
     try:
-        # Read file contents
         contents = await file.read()
         filename = file.filename
         
-        # Generate unique ID for this upload
         file_id = uuid.uuid4().hex[:8]
         saved_filename = f"{file_id}_{filename}"
         file_path = UPLOADS_PATH / saved_filename
         
-        # Save original file
         with open(file_path, "wb") as f:
             f.write(contents)
         
-        # Extract text from file
         extracted_text = extract_text_from_file(contents, filename)
         
         if not extracted_text or len(extracted_text.strip()) < 10:
             return JSONResponse({
                 "success": False,
-                "message": "Could not extract readable text from this file. Try uploading a clearer image of the problem.",
+                "message": "Could not extract readable text. Try a clearer image.",
                 "filename": filename
             })
         
-        # Store extracted text as a document in vector DB
         try:
             collection = chroma_client.get_or_create_collection("grade12_documents")
-            
-            # Create embedding and store
             embedding = get_embedding(extracted_text[:2000])
             doc_id = f"upload_{file_id}"
             
@@ -333,7 +335,7 @@ async def upload_file(
             
             return JSONResponse({
                 "success": True,
-                "message": f"Successfully uploaded and processed '{filename}'",
+                "message": f"Successfully uploaded '{filename}'",
                 "filename": filename,
                 "extracted_text_preview": extracted_text[:500],
                 "characters": len(extracted_text)
@@ -355,34 +357,32 @@ async def chat(req: ChatRequest):
 
     if relevant_chunks:
         context = "\n\n---\n\n".join(relevant_chunks)
-        context_note = "Use the uploaded documents and past paper content below to inform your answer."
+        context_note = "Use the uploaded documents and past paper content below."
     else:
         context = "No documents loaded yet. Answer from general knowledge."
-        context_note = "No documents loaded yet — answering from general knowledge."
+        context_note = "No documents loaded yet."
 
     system_prompt = f"""You are an expert South African Grade 12 tutor specialising in {req.subject}.
 You follow the CAPS curriculum strictly.
 You are warm, patient, encouraging and clear. You explain concepts step by step.
-When a student uploads an image of a problem, you can see the extracted text in the context.
+When a student uploads an image of a problem, you can see the extracted text.
 Solve problems step by step, showing all working.
-You use examples relevant to South African students.
-You remember the full conversation.
+Use examples relevant to South African students.
 
 {context_note}
 
-RELEVANT CONTENT FROM DOCUMENTS AND PAST PAPERS:
+RELEVANT CONTENT:
 {context}
 
 INSTRUCTIONS:
 - Answer thoroughly and clearly
-- If the user uploaded a problem, solve it step by step
-- Show all calculations
+- Show all calculations step by step
 - Reference relevant documents
 - Always encourage the learner
 - End by asking if they need further clarification"""
 
     try:
-        answer = ask_ollama(system_prompt, req.history, req.message)
+        answer = ask_groq(system_prompt, req.history, req.message)
         sources = []
         for chunk in relevant_chunks:
             first_line = chunk.split("\n")[0]
@@ -391,9 +391,10 @@ INSTRUCTIONS:
         return {
             "answer": answer,
             "sources": sources,
-            "model_used": OLLAMA_MODEL
+            "model_used": f"Groq ({GROQ_MODEL})"
         }
     except Exception as e:
+        print(f"Chat error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/generate-paper")
@@ -405,17 +406,16 @@ async def generate_paper(req: PaperRequest):
 
     if relevant_chunks:
         context = "\n\n---\n\n".join(relevant_chunks)
-        context_note = "Use the past paper style below as a reference for formatting and difficulty."
+        context_note = "Use the past paper style below as a reference."
     else:
         context = "No past papers loaded yet."
-        context_note = "No past papers loaded — generating in standard NSC format from knowledge."
+        context_note = "No past papers loaded."
 
-    topics_text = ", ".join(req.topics) if req.topics else "all CAPS topics for this subject"
+    topics_text = ", ".join(req.topics) if req.topics else "all CAPS topics"
 
-    system_prompt = """You are an expert South African NSC exam paper setter with years of experience
-setting papers for the Department of Basic Education.
+    system_prompt = """You are an expert South African NSC exam paper setter.
 You follow CAPS curriculum requirements precisely.
-You create fair, well-structured papers that test learners at all cognitive levels."""
+You create fair, well-structured papers."""
 
     user_message = f"""Create a complete Grade 12 {req.subject} Paper {req.paper_number} exam.
 
@@ -430,24 +430,23 @@ SPECIFICATIONS:
 PAST PAPER REFERENCE:
 {context}
 
-REQUIREMENTS FOR THE QUESTION PAPER:
-1. Proper NSC header with subject, grade, paper number, duration and total marks
-2. Clear instructions to learners
-3. Divide into Section A, Section B and Section C
-4. Every question must show mark allocation in brackets e.g. (3)
+REQUIREMENTS:
+1. Proper NSC header
+2. Clear instructions
+3. Divide into sections
+4. Show mark allocations in brackets
 5. End with TOTAL: {req.total_marks} MARKS
 
-Then on a new line write exactly: ---MEMORANDUM---
-
-Then write a complete memorandum with model answers and marks."""
+Then write exactly: ---MEMORANDUM---
+Then write a complete memorandum with model answers."""
 
     try:
-        paper = ask_ollama(system_prompt, [], user_message)
+        paper = ask_groq(system_prompt, [], user_message)
         return {
             "paper": paper,
             "subject": req.subject,
             "generated_at": datetime.now().isoformat(),
-            "model_used": OLLAMA_MODEL
+            "model_used": f"Groq ({GROQ_MODEL})"
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
