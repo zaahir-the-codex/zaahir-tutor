@@ -21,18 +21,18 @@ import io
 load_dotenv()
 
 # ============================================================
-# FORCE GROQ FOR RENDER - NO OLLAMA
+# GROQ API CONFIGURATION
 # ============================================================
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
-GROQ_MODEL = "llama3-8b-8192"
+GROQ_MODEL = "llama-3.3-70b-versatile"  # Powerful and free!
 
 # Print startup info (visible in Render logs)
 print("=" * 50)
-print("Zaahir's Tutor Starting...")
-print(f"GROQ_API_KEY present: {'YES' if GROQ_API_KEY else 'NO'}")
-print(f"GROQ_API_KEY first 10 chars: {GROQ_API_KEY[:10] if GROQ_API_KEY else 'NOT SET'}")
-print(f"Using model: {GROQ_MODEL}")
+print("🎓 Zaahir's Tutor Starting...")
+print(f"✅ GROQ_API_KEY present: {'YES' if GROQ_API_KEY else 'NO'}")
+print(f"🔑 Key starts with: {GROQ_API_KEY[:10] if GROQ_API_KEY else 'NOT SET'}...")
+print(f"🤖 Using model: {GROQ_MODEL}")
 print("=" * 50)
 
 # Settings for file storage
@@ -43,7 +43,7 @@ DOCUMENTS_PATH = os.getenv("DOCUMENTS_PATH", "./documents")
 UPLOADS_PATH = Path(DOCUMENTS_PATH) / "uploads"
 UPLOADS_PATH.mkdir(parents=True, exist_ok=True)
 
-app = FastAPI(title="Grade 12 AI Tutor")
+app = FastAPI(title="Zaahir's Grade 12 AI Tutor")
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -128,21 +128,19 @@ def extract_text_from_file(file_bytes: bytes, filename: str) -> str:
         return f"[File uploaded: {filename}. Content extraction not fully supported yet.]"
 
 def get_embedding(text: str) -> list:
-    """Get embedding - simplified for now."""
-    # Return a dummy embedding (we'll improve this later)
+    """Get embedding - simplified for cloud."""
     return [0.0] * 384
 
 def search_documents(query: str, n_results: int = 5) -> list:
     """Search for relevant documents."""
     try:
         collection = chroma_client.get_collection("grade12_documents")
-        # For now, return empty since no docs on cloud
         return []
     except Exception:
         return []
 
 def ask_groq(system_prompt: str, history: list, user_message: str) -> str:
-    """Send message to Groq API."""
+    """Send message to Groq API with llama-3.3-70b-versatile."""
     messages = [{"role": "system", "content": system_prompt}]
     for item in history:
         messages.append({"role": item["role"], "content": item["content"]})
@@ -168,10 +166,16 @@ def ask_groq(system_prompt: str, history: list, user_message: str) -> str:
             timeout=60
         )
         response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"]
-    except Exception as e:
+        result = response.json()
+        return result["choices"][0]["message"]["content"]
+    except requests.exceptions.Timeout:
+        return "The request timed out. Please try again."
+    except requests.exceptions.RequestException as e:
         print(f"Groq API error: {e}")
-        return f"Sorry, I'm having trouble connecting to the AI service. Error: {str(e)}"
+        return f"Sorry, I'm having trouble connecting. Error: {str(e)}"
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        return f"An unexpected error occurred: {str(e)}"
 
 def run_ingestion():
     """Run the ingestion script."""
