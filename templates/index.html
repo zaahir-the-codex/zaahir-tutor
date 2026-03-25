@@ -371,6 +371,14 @@
       font-size: 13px;
       color: var(--accent);
     }
+    .msg.ai pre {
+      background: var(--bg3);
+      padding: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-family: monospace;
+      font-size: 12px;
+    }
 
     .sources {
       margin-top: 10px;
@@ -512,17 +520,15 @@
     }
     .welcome-tip strong { color: var(--accent); }
 
-    /* Desktop layout - sidebar is hidden, we use menu panel instead */
+    /* Desktop layout */
     .sidebar-desktop {
       display: none;
     }
 
-    /* On desktop, make menu button always visible */
     .menu-btn {
       display: flex !important;
     }
 
-    /* Chat area full width on all devices */
     .layout {
       display: block;
     }
@@ -571,7 +577,7 @@
 <!-- MENU OVERLAY -->
 <div class="menu-overlay" id="menu-overlay" onclick="closeMenu()"></div>
 
-<!-- SLIDE-IN MENU PANEL (works on all devices) -->
+<!-- SLIDE-IN MENU PANEL -->
 <div class="menu-panel" id="menu-panel">
   <div class="menu-header">
     <h2>Menu</h2>
@@ -653,10 +659,13 @@
       <div class="welcome-tip">
         <strong>Welcome to Zaahir's Tutor! 🎓</strong><br><br>
         I'm your personal Grade 12 AI tutor, trained on the South African CAPS
-        curriculum and NSC past papers. I can explain any concept, work through
-        problems step by step, and help you prepare for your final exams.<br><br>
-        <strong>📸 New:</strong> Upload a photo of a handwritten problem using the 📷 button!<br>
-        <strong>📥 New:</strong> Fetch past papers directly from the DBE website using the menu.<br><br>
+        curriculum and NSC past papers.<br><br>
+        <strong>📸 How to upload a problem:</strong><br>
+        1. Take a clear photo of your handwritten problem<br>
+        2. Click the 📷 button and select the photo<br>
+        3. Wait for text extraction<br>
+        4. Type your question (e.g., "Solve this step by step") and click Send<br><br>
+        <strong>📥 Fetch past papers</strong> directly from the DBE website using the menu.<br><br>
         Select your subject in the menu and ask me anything!
       </div>
     </div>
@@ -689,6 +698,7 @@
   let chatHistory = [];
   let currentTheme = localStorage.getItem('zt-theme') || 'light';
   let fetchInterval = null;
+  let pendingUpload = null; // Store uploaded text until user adds question
 
   // ── Init ──
   setTheme(currentTheme);
@@ -813,9 +823,17 @@
 
   async function sendMessage() {
     const input = document.getElementById('chat-input');
-    const msg = input.value.trim();
-    if (!msg) return;
-
+    let msg = input.value.trim();
+    
+    if (!msg && !pendingUpload) return;
+    
+    // If there's a pending upload, prepend the extracted text
+    if (pendingUpload) {
+      msg = `I uploaded an image. Here's the text from it:\n\n${pendingUpload.text}\n\nMy question: ${msg || "Please solve this problem step by step."}`;
+      pendingUpload = null; // Clear after use
+      input.placeholder = "Ask me anything...";
+    }
+    
     input.value = '';
     input.style.height = '46px';
     addMessage(msg, 'user');
@@ -859,7 +877,7 @@
     input.focus();
   }
 
-  // ── File Upload ──
+  // ── File Upload with Question ──
   async function uploadFile(input) {
     if (!input.files || !input.files[0]) return;
     
@@ -887,12 +905,24 @@
       document.getElementById('upload-thinking')?.remove();
       
       if (data.success) {
-        addMessage(`✅ ${data.message}\n\n**Extracted text preview:**\n${data.extracted_text_preview}\n\nWhat would you like me to help you with from this?`, 'ai');
+        // Store the extracted text
+        pendingUpload = {
+          text: data.extracted_text,
+          filename: data.filename
+        };
         
-        chatHistory.push({ role: 'user', content: `I uploaded a file: ${file.name}. Here's what it contains:\n${data.extracted_text_preview}\n\nPlease help me solve/understand this.` });
+        // Show preview and ask for question
+        const previewMsg = `✅ **Image uploaded successfully!**\n\n**Extracted text:**\n\`\`\`\n${data.extracted_text_preview}${data.extracted_text.length > 500 ? '\n...(truncated)' : ''}\n\`\`\`\n\n**What would you like me to do with this?**\n\nType your question below (e.g., "Solve this problem" or "Explain step by step") and click Send.`;
+        
+        addMessage(previewMsg, 'ai');
+        
+        // Focus the input and add placeholder
+        const chatInput = document.getElementById('chat-input');
+        chatInput.focus();
+        chatInput.placeholder = "Type your question about the image (e.g., 'Solve this', 'Explain step by step')...";
         
       } else {
-        addMessage(`❌ Upload failed: ${data.message}\n\nTry taking a clearer photo of the problem.`, 'ai');
+        addMessage(`❌ Upload failed: ${data.message}\n\n${data.suggestion || 'Try taking a clearer photo with good lighting and make sure the text is in focus.'}`, 'ai');
       }
     } catch (e) {
       document.getElementById('upload-thinking')?.remove();
