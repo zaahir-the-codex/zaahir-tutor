@@ -1,13 +1,13 @@
 import os
 import requests
 from datetime import datetime
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
-from fastapi.requests import Request
 from pydantic import BaseModel
 from dotenv import load_dotenv
+import traceback
 
 load_dotenv()
 
@@ -25,8 +25,12 @@ print(f"🤖 Using model: {GROQ_MODEL}")
 print("=" * 50)
 
 app = FastAPI(title="Zaahir's Grade 12 AI Tutor")
-templates = Jinja2Templates(directory="templates")
+
+# Mount static files FIRST
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Then set up templates
+templates = Jinja2Templates(directory="templates")
 
 # Subjects list
 SUBJECTS = [
@@ -87,8 +91,10 @@ def ask_groq(system_prompt: str, history: list, user_message: str) -> str:
             timeout=90
         )
         response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"]
+        result = response.json()
+        return result["choices"][0]["message"]["content"]
     except Exception as e:
+        print(f"Groq API error: {e}")
         return f"Sorry, I'm having trouble. Error: {str(e)}"
 
 def generate_dbe_paper(subject: str, paper_number: int, total_marks: int, 
@@ -156,9 +162,15 @@ Format like a real DBE marking guideline."""
 # ============================================================
 # API ENDPOINTS
 # ============================================================
-@app.get("/", response_class=HTMLResponse)
+@app.get("/")
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    """Serve the main page."""
+    try:
+        return templates.TemplateResponse("index.html", {"request": request})
+    except Exception as e:
+        print(f"Template error: {e}")
+        traceback.print_exc()
+        return HTMLResponse(f"<h1>Error loading page</h1><p>{str(e)}</p>", status_code=500)
 
 @app.get("/subjects")
 async def get_subjects():
@@ -170,18 +182,13 @@ async def get_stats():
 
 @app.post("/chat")
 async def chat(req: ChatRequest):
-    system_prompt = f"""You are an expert South African Grade 12 tutor specialising in {req.subject}.
+    try:
+        system_prompt = f"""You are an expert South African Grade 12 tutor specialising in {req.subject}.
 You follow the CAPS curriculum strictly. You are warm, patient, and encouraging.
-When a student selects text and asks about it, explain that specific part thoroughly.
 Solve problems step by step, showing all working.
 
-INSTRUCTIONS:
-- Answer thoroughly and clearly
-- Show all calculations step by step
-- Always encourage the learner
-- End by asking if they need further clarification"""
+Answer thoroughly and clearly. End by asking if they need further clarification."""
 
-    try:
         answer = ask_groq(system_prompt, req.history, req.message)
         return {
             "answer": answer,
@@ -189,6 +196,8 @@ INSTRUCTIONS:
             "model_used": f"Groq ({GROQ_MODEL})"
         }
     except Exception as e:
+        print(f"Chat error: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/generate-paper")
@@ -204,22 +213,23 @@ async def generate_paper(req: PaperRequest):
         )
         return result
     except Exception as e:
+        print(f"Paper generation error: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/ask-about-selection")
 async def ask_about_selection(req: AskAboutSelection):
-    system_prompt = f"""You are an expert South African Grade 12 tutor specialising in {req.subject}.
-The student has highlighted a specific part of an exam paper or explanation.
-Focus ONLY on explaining the selected text thoroughly.
+    try:
+        system_prompt = f"""You are an expert South African Grade 12 tutor specialising in {req.subject}.
+The student has highlighted a specific part. Focus ONLY on explaining the selected text thoroughly.
 Break it down step by step with examples."""
 
-    user_message = f"""The student highlighted this text:
+        user_message = f"""The student highlighted this text:
 ---
 {req.selected_text}
 ---
 Please explain this in detail. Break it down, show examples, and help the student understand completely."""
 
-    try:
         answer = ask_groq(system_prompt, req.history, user_message)
         return {
             "answer": answer,
@@ -227,6 +237,8 @@ Please explain this in detail. Break it down, show examples, and help the studen
             "model_used": f"Groq ({GROQ_MODEL})"
         }
     except Exception as e:
+        print(f"Ask about selection error: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
