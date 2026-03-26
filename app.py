@@ -151,10 +151,9 @@ Format like a real DBE marking guideline."""
     return result
 
 # ============================================================
-# HTML CONTENT
+# HTML CONTENT - COMPLETE WORKING VERSION
 # ============================================================
-HTML_CONTENT = '''
-<!DOCTYPE html>
+HTML_CONTENT = '''<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -263,7 +262,7 @@ HTML_CONTENT = '''
     <div class="chat-area" id="chat-area">
         <div class="welcome-tip">
             <strong>Welcome to Zaahir's Tutor! 🎓</strong><br><br>
-            <strong>📝 Generate Papers:</strong> Open menu → Generate Paper → choose settings → click Generate.<br>
+            <strong>📝 Generate Papers:</strong> Click the ☰ menu → Generate Paper → choose settings → click Generate.<br>
             <strong>✨ Ask About Anything:</strong> Highlight any text in a generated paper → click "Ask Zaahir".<br><br>
             Select your subject in the menu and ask me anything!
         </div>
@@ -289,11 +288,15 @@ HTML_CONTENT = '''
         const c = colors[theme];
         document.body.style.background = c.bg;
         document.body.style.color = c.text;
-        document.querySelectorAll('.header, .input-bar').forEach(el => { if(el) el.style.background = c.header; });
-        document.querySelectorAll('.menu-panel').forEach(el => { if(el) el.style.background = c.ai; });
-        document.querySelectorAll('.msg.ai').forEach(el => { if(el) el.style.background = c.ai; });
-        document.querySelectorAll('.msg.user').forEach(el => { if(el) el.style.background = c.user; });
-        document.querySelectorAll('.menu-select, .menu-input, .chat-input').forEach(el => { if(el) el.style.background = c.ai; });
+        const header = document.querySelector('.header');
+        if (header) header.style.background = c.header;
+        const inputBar = document.querySelector('.input-bar');
+        if (inputBar) inputBar.style.background = c.header;
+        const menuPanel = document.getElementById('menu-panel');
+        if (menuPanel) menuPanel.style.background = c.ai;
+        document.querySelectorAll('.msg.ai').forEach(el => el.style.background = c.ai);
+        document.querySelectorAll('.msg.user').forEach(el => el.style.background = c.user);
+        document.querySelectorAll('.menu-select, .menu-input, .chat-input').forEach(el => el.style.background = c.ai);
         localStorage.setItem('theme', theme);
     }
 
@@ -312,13 +315,17 @@ HTML_CONTENT = '''
     }
 
     function openMenu() { 
-        document.getElementById('menu-panel').classList.add('open');
-        document.getElementById('overlay').classList.add('open');
+        const panel = document.getElementById('menu-panel');
+        const overlay = document.getElementById('overlay');
+        if (panel) panel.classList.add('open');
+        if (overlay) overlay.classList.add('open');
     }
     
     function closeMenu() { 
-        document.getElementById('menu-panel').classList.remove('open');
-        document.getElementById('overlay').classList.remove('open');
+        const panel = document.getElementById('menu-panel');
+        const overlay = document.getElementById('overlay');
+        if (panel) panel.classList.remove('open');
+        if (overlay) overlay.classList.remove('open');
     }
 
     function setMode(m) {
@@ -413,7 +420,8 @@ HTML_CONTENT = '''
             const rect = range.getBoundingClientRect();
             selectionToolbar = document.createElement('div');
             selectionToolbar.className = 'selection-toolbar';
-            selectionToolbar.innerHTML = `<span>📖 Ask Zaahir about: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"</span><button onclick="askSelection('${text.replace(/'/g, "\\'")}')">Ask</button>`;
+            selectionToolbar.innerHTML = `<span>📖 Ask Zaahir</span><button onclick="askSelection('${text.replace(/'/g, "\\'")}')">Ask</button>`;
+            selectionToolbar.style.position = 'fixed';
             selectionToolbar.style.left = (rect.left + window.scrollX) + 'px';
             selectionToolbar.style.top = (rect.top + window.scrollY - 40) + 'px';
             document.body.appendChild(selectionToolbar);
@@ -489,6 +497,7 @@ HTML_CONTENT = '''
         }
     }
 
+    // Initialize
     loadSubjects();
     const savedTheme = localStorage.getItem('theme') || 'dark';
     setTheme(savedTheme);
