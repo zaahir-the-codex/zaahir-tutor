@@ -151,7 +151,7 @@ Format like a real DBE marking guideline."""
     return result
 
 # ============================================================
-# HTML CONTENT - COMPLETE WORKING VERSION
+# HTML CONTENT - COMPLETE WORKING VERSION WITH FIXED MENU
 # ============================================================
 HTML_CONTENT = '''<!DOCTYPE html>
 <html lang="en">
@@ -214,7 +214,7 @@ HTML_CONTENT = '''<!DOCTYPE html>
 
 <div class="header">
     <div class="header-left">
-        <button class="menu-btn" onclick="openMenu()">☰</button>
+        <button class="menu-btn" id="menuButton" onclick="window.openMenu()">☰</button>
         <div>
             <h1>Zaahir's Tutor</h1>
             <div class="sub">Grade 12 · SA CAPS Curriculum</div>
@@ -223,16 +223,16 @@ HTML_CONTENT = '''<!DOCTYPE html>
     <div class="stats-pill"><span id="doc-count">0</span> chunks</div>
 </div>
 
-<div class="overlay" id="overlay" onclick="closeMenu()"></div>
+<div class="overlay" id="overlay" onclick="window.closeMenu()"></div>
 <div class="menu-panel" id="menu-panel">
     <div class="menu-header">
         <h3>Menu</h3>
-        <button class="close-btn" onclick="closeMenu()">✕</button>
+        <button class="close-btn" onclick="window.closeMenu()">✕</button>
     </div>
     <div class="menu-section">
         <div class="menu-section-label">Mode</div>
-        <button class="mode-btn active" id="btn-tutor" onclick="setMode('tutor'); closeMenu()">💬 Tutor Chat</button>
-        <button class="mode-btn" id="btn-paper" onclick="setMode('paper'); closeMenu()">📝 Generate Paper</button>
+        <button class="mode-btn active" id="btn-tutor" onclick="window.setMode('tutor'); window.closeMenu()">💬 Tutor Chat</button>
+        <button class="mode-btn" id="btn-paper" onclick="window.setMode('paper'); window.closeMenu()">📝 Generate Paper</button>
     </div>
     <div class="menu-section">
         <div class="menu-section-label">Subject</div>
@@ -245,15 +245,15 @@ HTML_CONTENT = '''<!DOCTYPE html>
         <input type="number" class="menu-input" id="duration" value="3" step="0.5" placeholder="Duration (hours)">
         <input type="text" class="menu-input" id="topics" placeholder="Topics (optional, comma separated)">
         <label style="display:flex; align-items:center; gap:8px; margin:8px 0;"><input type="checkbox" id="include-memo" checked> Include Memorandum</label>
-        <button class="gen-btn" id="gen-btn" onclick="generatePaper()">📄 Generate Paper + Memo</button>
+        <button class="gen-btn" id="gen-btn" onclick="window.generatePaper()">📄 Generate Paper + Memo</button>
     </div>
     <div class="menu-section">
         <div class="menu-section-label">Theme</div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <button class="theme-btn" onclick="setTheme('light')">☀️ Light</button>
-            <button class="theme-btn" onclick="setTheme('dark')">🌙 Dark</button>
-            <button class="theme-btn" onclick="setTheme('green')">🌿 Green</button>
-            <button class="theme-btn" onclick="setTheme('purple')">💜 Purple</button>
+            <button class="theme-btn" onclick="window.setTheme('light')">☀️ Light</button>
+            <button class="theme-btn" onclick="window.setTheme('dark')">🌙 Dark</button>
+            <button class="theme-btn" onclick="window.setTheme('green')">🌿 Green</button>
+            <button class="theme-btn" onclick="window.setTheme('purple')">💜 Purple</button>
         </div>
     </div>
 </div>
@@ -268,17 +268,35 @@ HTML_CONTENT = '''<!DOCTYPE html>
         </div>
     </div>
     <div class="input-bar">
-        <textarea class="chat-input" id="chat-input" placeholder="Ask me anything..." onkeydown="handleKey(event)"></textarea>
-        <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
+        <textarea class="chat-input" id="chat-input" placeholder="Ask me anything..." onkeydown="window.handleKey(event)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="window.sendMessage()">Send</button>
     </div>
 </div>
 
 <script>
+    // Global variables
     let mode = 'tutor';
     let chatHistory = [];
     let selectionToolbar = null;
 
-    function setTheme(theme) {
+    // Make all functions globally available via window
+    window.openMenu = function() { 
+        const panel = document.getElementById('menu-panel');
+        const overlay = document.getElementById('overlay');
+        if (panel) panel.classList.add('open');
+        if (overlay) overlay.classList.add('open');
+        console.log('Menu opened');
+    };
+    
+    window.closeMenu = function() { 
+        const panel = document.getElementById('menu-panel');
+        const overlay = document.getElementById('overlay');
+        if (panel) panel.classList.remove('open');
+        if (overlay) overlay.classList.remove('open');
+        console.log('Menu closed');
+    };
+
+    window.setTheme = function(theme) {
         const colors = {
             light: { bg: '#f4f6fb', text: '#1a1d2e', accent: '#4a6adc', header: '#ffffff', border: '#dde2f0', user: '#4a6adc', ai: '#ffffff' },
             dark: { bg: '#0f1117', text: '#e8e8f0', accent: '#7c9eff', header: '#1a1d2e', border: '#2d3148', user: '#1e2a5e', ai: '#161925' },
@@ -298,37 +316,9 @@ HTML_CONTENT = '''<!DOCTYPE html>
         document.querySelectorAll('.msg.user').forEach(el => el.style.background = c.user);
         document.querySelectorAll('.menu-select, .menu-input, .chat-input').forEach(el => el.style.background = c.ai);
         localStorage.setItem('theme', theme);
-    }
+    };
 
-    async function loadSubjects() {
-        try {
-            const res = await fetch('/subjects');
-            const data = await res.json();
-            const select = document.getElementById('subject-select');
-            if (select) select.innerHTML = data.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
-        } catch(e) { console.log(e); }
-    }
-
-    function getSubject() { 
-        const select = document.getElementById('subject-select');
-        return select ? select.value : 'Mathematics';
-    }
-
-    function openMenu() { 
-        const panel = document.getElementById('menu-panel');
-        const overlay = document.getElementById('overlay');
-        if (panel) panel.classList.add('open');
-        if (overlay) overlay.classList.add('open');
-    }
-    
-    function closeMenu() { 
-        const panel = document.getElementById('menu-panel');
-        const overlay = document.getElementById('overlay');
-        if (panel) panel.classList.remove('open');
-        if (overlay) overlay.classList.remove('open');
-    }
-
-    function setMode(m) {
+    window.setMode = function(m) {
         mode = m;
         const tutorBtn = document.getElementById('btn-tutor');
         const paperBtn = document.getElementById('btn-paper');
@@ -336,14 +326,14 @@ HTML_CONTENT = '''<!DOCTYPE html>
         if (tutorBtn) tutorBtn.classList.toggle('active', m === 'tutor');
         if (paperBtn) paperBtn.classList.toggle('active', m === 'paper');
         if (paperSettings) paperSettings.classList.toggle('hidden', m !== 'paper');
-    }
+    };
 
-    function handleKey(e) { 
+    window.handleKey = function(e) { 
         if (e.key === 'Enter' && !e.shiftKey) { 
             e.preventDefault(); 
-            sendMessage(); 
+            window.sendMessage(); 
         } 
-    }
+    };
 
     function escapeHtml(text) { 
         const div = document.createElement('div');
@@ -375,7 +365,7 @@ HTML_CONTENT = '''<!DOCTYPE html>
         area.scrollTop = area.scrollHeight;
     }
 
-    async function sendMessage() {
+    window.sendMessage = async function() {
         const input = document.getElementById('chat-input');
         const msg = input.value.trim();
         if (!msg) return;
@@ -394,7 +384,7 @@ HTML_CONTENT = '''<!DOCTYPE html>
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     message: msg, 
-                    subject: getSubject(), 
+                    subject: document.getElementById('subject-select')?.value || 'Mathematics', 
                     history: chatHistory.slice(-20) 
                 })
             });
@@ -406,29 +396,9 @@ HTML_CONTENT = '''<!DOCTYPE html>
             thinking.remove(); 
             addMessage('Error: Could not reach server.', 'ai'); 
         }
-    }
+    };
 
-    document.addEventListener('mouseup', function() {
-        const sel = window.getSelection();
-        const text = sel.toString().trim();
-        if (selectionToolbar) { 
-            selectionToolbar.remove(); 
-            selectionToolbar = null; 
-        }
-        if (text.length > 0 && text.length < 500) {
-            const range = sel.getRangeAt(0);
-            const rect = range.getBoundingClientRect();
-            selectionToolbar = document.createElement('div');
-            selectionToolbar.className = 'selection-toolbar';
-            selectionToolbar.innerHTML = `<span>📖 Ask Zaahir</span><button onclick="askSelection('${text.replace(/'/g, "\\'")}')">Ask</button>`;
-            selectionToolbar.style.position = 'fixed';
-            selectionToolbar.style.left = (rect.left + window.scrollX) + 'px';
-            selectionToolbar.style.top = (rect.top + window.scrollY - 40) + 'px';
-            document.body.appendChild(selectionToolbar);
-        }
-    });
-
-    async function askSelection(text) {
+    window.askSelection = async function(text) {
         if (selectionToolbar) { 
             selectionToolbar.remove(); 
             selectionToolbar = null; 
@@ -447,7 +417,7 @@ HTML_CONTENT = '''<!DOCTYPE html>
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     selected_text: text, 
-                    subject: getSubject(), 
+                    subject: document.getElementById('subject-select')?.value || 'Mathematics', 
                     history: chatHistory.slice(-10) 
                 })
             });
@@ -459,9 +429,9 @@ HTML_CONTENT = '''<!DOCTYPE html>
             thinking.remove(); 
             addMessage('Error explaining that section.', 'ai'); 
         }
-    }
+    };
 
-    async function generatePaper() {
+    window.generatePaper = async function() {
         const btn = document.getElementById('gen-btn');
         if (btn) {
             btn.disabled = true;
@@ -474,7 +444,7 @@ HTML_CONTENT = '''<!DOCTYPE html>
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    subject: getSubject(),
+                    subject: document.getElementById('subject-select')?.value || 'Mathematics',
                     paper_number: parseInt(document.getElementById('paper-num')?.value || '1'),
                     total_marks: parseInt(document.getElementById('total-marks')?.value || '150'),
                     duration_hours: parseFloat(document.getElementById('duration')?.value || '3'),
@@ -495,12 +465,44 @@ HTML_CONTENT = '''<!DOCTYPE html>
             btn.disabled = false;
             btn.textContent = '📄 Generate Paper + Memo';
         }
+    };
+
+    async function loadSubjects() {
+        try {
+            const res = await fetch('/subjects');
+            const data = await res.json();
+            const select = document.getElementById('subject-select');
+            if (select) select.innerHTML = data.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+        } catch(e) { console.log(e); }
     }
+
+    // Text selection handler
+    document.addEventListener('mouseup', function() {
+        const sel = window.getSelection();
+        const text = sel.toString().trim();
+        if (selectionToolbar) { 
+            selectionToolbar.remove(); 
+            selectionToolbar = null; 
+        }
+        if (text.length > 0 && text.length < 500) {
+            const range = sel.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            selectionToolbar = document.createElement('div');
+            selectionToolbar.className = 'selection-toolbar';
+            selectionToolbar.innerHTML = `<span>📖 Ask Zaahir</span><button onclick="window.askSelection('${text.replace(/'/g, "\\'")}')">Ask</button>`;
+            selectionToolbar.style.position = 'fixed';
+            selectionToolbar.style.left = (rect.left + window.scrollX) + 'px';
+            selectionToolbar.style.top = (rect.top + window.scrollY - 40) + 'px';
+            document.body.appendChild(selectionToolbar);
+        }
+    });
 
     // Initialize
     loadSubjects();
     const savedTheme = localStorage.getItem('theme') || 'dark';
-    setTheme(savedTheme);
+    window.setTheme(savedTheme);
+    
+    console.log('Tutor loaded! All functions ready.');
 </script>
 </body>
 </html>
