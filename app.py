@@ -2,7 +2,6 @@ import os
 import requests
 from datetime import datetime
 from fastapi import FastAPI, HTTPException
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -24,7 +23,6 @@ print(f"🤖 Using model: {GROQ_MODEL}")
 print("=" * 50)
 
 app = FastAPI(title="Zaahir's Grade 12 AI Tutor")
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Subjects list
 SUBJECTS = [
@@ -151,208 +149,221 @@ Format like a real DBE marking guideline."""
     return result
 
 # ============================================================
-# HTML CONTENT - COMPLETE WORKING VERSION WITH FIXED MENU
+# SIMPLE WORKING HTML - NO COMPLEX JAVASCRIPT ISSUES
 # ============================================================
 HTML_CONTENT = '''<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zaahir's Tutor</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e8e8f0; transition: all 0.2s; }
-        .header { background: #1a1d2e; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2d3148; }
-        .header-left { display: flex; align-items: center; gap: 12px; }
-        .menu-btn { background: none; border: 1px solid #2d3148; border-radius: 8px; color: #9099bb; padding: 8px 12px; cursor: pointer; font-size: 18px; }
-        .menu-btn:hover { background: #1e2140; }
-        .header h1 { font-size: 18px; font-weight: 700; color: #7c9eff; }
-        .header .sub { font-size: 11px; color: #666; margin-top: 2px; }
-        .stats-pill { background: #252840; border: 1px solid #3d4275; border-radius: 20px; padding: 5px 12px; font-size: 11px; color: #888; }
-        .stats-pill span { color: #7c9eff; font-weight: 600; }
-        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 199; }
-        .overlay.open { display: block; }
-        .menu-panel { position: fixed; top: 0; left: -300px; width: 280px; height: 100vh; background: #13162b; border-right: 1px solid #2d3148; z-index: 200; transition: left 0.25s; padding: 16px; overflow-y: auto; }
-        .menu-panel.open { left: 0; }
+        body { font-family: Arial, sans-serif; background: #0f1117; color: #e8e8f0; }
+        
+        /* Header */
+        .header { background: #1a1d2e; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2d3148; }
+        .header h1 { color: #7c9eff; font-size: 20px; }
+        .stats { background: #252840; padding: 5px 12px; border-radius: 20px; font-size: 12px; }
+        
+        /* Menu Button */
+        .menu-btn { background: #7c9eff; border: none; color: #0f1117; padding: 10px 15px; font-size: 18px; cursor: pointer; border-radius: 8px; margin-right: 15px; font-weight: bold; }
+        .menu-btn:hover { opacity: 0.8; }
+        
+        /* Menu Panel */
+        .overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999; }
+        .overlay.show { display: block; }
+        .menu-panel { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background: #1a1d2e; z-index: 1000; transition: left 0.3s; padding: 20px; overflow-y: auto; border-right: 1px solid #2d3148; }
+        .menu-panel.show { left: 0; }
         .menu-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #2d3148; }
-        .menu-header h3 { color: #e8e8f0; }
-        .close-btn { background: none; border: none; color: #9099bb; font-size: 20px; cursor: pointer; }
+        .close-btn { background: none; border: none; color: #7c9eff; font-size: 24px; cursor: pointer; }
         .menu-section { margin-bottom: 20px; }
-        .menu-section-label { font-size: 10px; text-transform: uppercase; color: #666; margin-bottom: 8px; letter-spacing: 0.08em; }
-        .mode-btn { width: 100%; padding: 10px; margin-bottom: 8px; background: #1e2140; border: 1px solid #2d3148; border-radius: 8px; color: #9099bb; cursor: pointer; text-align: left; font-family: inherit; }
-        .mode-btn:hover { background: #252840; }
-        .mode-btn.active { background: #1e2a5e; border-color: #7c9eff; color: #7c9eff; font-weight: 600; }
-        .menu-select, .menu-input { width: 100%; padding: 9px 12px; margin-bottom: 8px; background: #1e2140; border: 1px solid #2d3148; border-radius: 8px; color: #e8e8f0; font-family: inherit; outline: none; }
-        .menu-select:focus, .menu-input:focus { border-color: #7c9eff; }
-        .gen-btn { width: 100%; padding: 11px; background: #7c9eff; border: none; border-radius: 8px; color: #0f1117; font-weight: 600; cursor: pointer; margin-top: 10px; font-family: inherit; }
-        .gen-btn:hover { opacity: 0.88; }
-        .gen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .main { display: flex; flex-direction: column; height: calc(100vh - 57px); }
-        .chat-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
-        .msg { max-width: 85%; line-height: 1.7; font-size: 14px; animation: fadeUp 0.2s ease; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        .msg.user { align-self: flex-end; background: #1e2a5e; color: #c8d8ff; border-radius: 16px 16px 4px 16px; padding: 11px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .msg.ai { align-self: flex-start; background: #161925; border: 1px solid #2a2d45; border-radius: 4px 16px 16px 16px; padding: 14px 16px; width: 100%; max-width: 100%; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .msg.ai pre { background: #0f1117; padding: 10px; border-radius: 8px; overflow-x: auto; margin: 8px 0; font-family: monospace; font-size: 12px; }
-        .paper-container { background: #1a1d2e; border: 1px solid #2d3148; border-radius: 12px; padding: 20px; margin: 8px 0; font-family: monospace; font-size: 13px; line-height: 1.8; white-space: pre-wrap; }
-        .thinking { align-self: flex-start; color: #666; font-style: italic; font-size: 13px; padding: 8px 12px; background: #161925; border: 1px solid #2a2d45; border-radius: 4px 16px 16px 16px; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .input-bar { padding: 12px 16px; border-top: 1px solid #2d3148; background: #1a1d2e; display: flex; gap: 8px; align-items: flex-end; }
-        .chat-input { flex: 1; background: #1e2140; border: 1px solid #2d3148; border-radius: 12px; color: #e8e8f0; padding: 11px 15px; font-size: 14px; font-family: inherit; resize: none; outline: none; height: 46px; line-height: 1.5; }
-        .chat-input:focus { border-color: #7c9eff; }
-        .send-btn { padding: 11px 20px; background: #7c9eff; border: none; border-radius: 12px; color: #0f1117; font-weight: 600; cursor: pointer; font-family: inherit; height: 46px; }
-        .send-btn:hover { opacity: 0.88; }
+        .menu-section-label { font-size: 12px; color: #666; margin-bottom: 8px; text-transform: uppercase; }
+        .mode-btn, select, input { width: 100%; padding: 10px; margin-bottom: 8px; background: #1e2140; border: 1px solid #2d3148; border-radius: 8px; color: #e8e8f0; cursor: pointer; }
+        .mode-btn.active { background: #1e2a5e; border-color: #7c9eff; color: #7c9eff; }
+        .gen-btn { background: #7c9eff; color: #0f1117; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
         .hidden { display: none; }
-        .selection-toolbar { position: fixed; background: #7c9eff; color: #0f1117; border-radius: 30px; padding: 8px 16px; font-size: 13px; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.3); cursor: pointer; display: flex; gap: 8px; align-items: center; }
-        .selection-toolbar button { background: none; border: none; color: #0f1117; font-weight: bold; cursor: pointer; margin-left: 8px; }
-        .welcome-tip { background: #161925; border: 1px solid #2a2d45; border-radius: 12px; padding: 16px 18px; font-size: 14px; color: #9099bb; line-height: 1.8; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .welcome-tip strong { color: #7c9eff; }
-        .model-tag { font-size: 10px; color: #666; margin-top: 8px; }
+        
+        /* Chat Area */
+        .main { display: flex; flex-direction: column; height: calc(100vh - 70px); }
+        .chat-area { flex: 1; overflow-y: auto; padding: 20px; }
+        .msg { margin-bottom: 15px; padding: 10px 15px; border-radius: 10px; max-width: 80%; }
+        .msg.user { background: #1e2a5e; margin-left: auto; text-align: right; }
+        .msg.ai { background: #161925; border: 1px solid #2a2d45; }
+        .input-bar { padding: 15px; border-top: 1px solid #2d3148; display: flex; gap: 10px; }
+        .chat-input { flex: 1; padding: 12px; background: #1e2140; border: 1px solid #2d3148; border-radius: 8px; color: #e8e8f0; resize: none; font-family: inherit; }
+        .send-btn { padding: 12px 20px; background: #7c9eff; border: none; border-radius: 8px; color: #0f1117; font-weight: bold; cursor: pointer; }
+        .thinking { color: #666; font-style: italic; padding: 10px; }
+        .welcome { background: #161925; padding: 20px; border-radius: 10px; margin-bottom: 20px; line-height: 1.6; }
+        .paper-container { background: #1a1d2e; padding: 15px; border-radius: 8px; margin: 10px 0; font-family: monospace; white-space: pre-wrap; }
+        .selection-toolbar { position: fixed; background: #7c9eff; color: #0f1117; padding: 8px 15px; border-radius: 20px; cursor: pointer; z-index: 1001; font-size: 12px; }
+        .model-tag { font-size: 10px; color: #666; margin-top: 5px; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div class="header-left">
-        <button class="menu-btn" id="menuButton" onclick="window.openMenu()">☰</button>
-        <div>
-            <h1>Zaahir's Tutor</h1>
-            <div class="sub">Grade 12 · SA CAPS Curriculum</div>
-        </div>
+    <div style="display: flex; align-items: center;">
+        <button class="menu-btn" id="menuButton">☰</button>
+        <h1>Zaahir's Tutor</h1>
     </div>
-    <div class="stats-pill"><span id="doc-count">0</span> chunks</div>
+    <div class="stats">Grade 12 · SA CAPS</div>
 </div>
 
-<div class="overlay" id="overlay" onclick="window.closeMenu()"></div>
-<div class="menu-panel" id="menu-panel">
+<div class="overlay" id="overlay"></div>
+<div class="menu-panel" id="menuPanel">
     <div class="menu-header">
         <h3>Menu</h3>
-        <button class="close-btn" onclick="window.closeMenu()">✕</button>
+        <button class="close-btn" id="closeMenuBtn">✕</button>
     </div>
     <div class="menu-section">
         <div class="menu-section-label">Mode</div>
-        <button class="mode-btn active" id="btn-tutor" onclick="window.setMode('tutor'); window.closeMenu()">💬 Tutor Chat</button>
-        <button class="mode-btn" id="btn-paper" onclick="window.setMode('paper'); window.closeMenu()">📝 Generate Paper</button>
+        <button class="mode-btn active" id="tutorModeBtn">💬 Tutor Chat</button>
+        <button class="mode-btn" id="paperModeBtn">📝 Generate Paper</button>
     </div>
     <div class="menu-section">
         <div class="menu-section-label">Subject</div>
-        <select class="menu-select" id="subject-select"></select>
+        <select id="subjectSelect"></select>
     </div>
-    <div id="paper-settings" class="menu-section hidden">
+    <div id="paperSettings" class="menu-section hidden">
         <div class="menu-section-label">Paper Settings</div>
-        <select class="menu-select" id="paper-num"><option value="1">Paper 1</option><option value="2">Paper 2</option><option value="3">Paper 3</option></select>
-        <input type="number" class="menu-input" id="total-marks" value="150" placeholder="Total Marks">
-        <input type="number" class="menu-input" id="duration" value="3" step="0.5" placeholder="Duration (hours)">
-        <input type="text" class="menu-input" id="topics" placeholder="Topics (optional, comma separated)">
-        <label style="display:flex; align-items:center; gap:8px; margin:8px 0;"><input type="checkbox" id="include-memo" checked> Include Memorandum</label>
-        <button class="gen-btn" id="gen-btn" onclick="window.generatePaper()">📄 Generate Paper + Memo</button>
+        <select id="paperNum"><option value="1">Paper 1</option><option value="2">Paper 2</option><option value="3">Paper 3</option></select>
+        <input type="number" id="totalMarks" value="150" placeholder="Total Marks">
+        <input type="number" id="duration" value="3" step="0.5" placeholder="Duration (hours)">
+        <input type="text" id="topics" placeholder="Topics (optional)">
+        <label><input type="checkbox" id="includeMemo" checked> Include Memorandum</label>
+        <button class="gen-btn" id="generatePaperBtn">📄 Generate Paper + Memo</button>
     </div>
     <div class="menu-section">
         <div class="menu-section-label">Theme</div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <button class="theme-btn" onclick="window.setTheme('light')">☀️ Light</button>
-            <button class="theme-btn" onclick="window.setTheme('dark')">🌙 Dark</button>
-            <button class="theme-btn" onclick="window.setTheme('green')">🌿 Green</button>
-            <button class="theme-btn" onclick="window.setTheme('purple')">💜 Purple</button>
+            <button class="theme-btn" data-theme="light">☀️ Light</button>
+            <button class="theme-btn" data-theme="dark">🌙 Dark</button>
+            <button class="theme-btn" data-theme="green">🌿 Green</button>
+            <button class="theme-btn" data-theme="purple">💜 Purple</button>
         </div>
     </div>
 </div>
 
 <div class="main">
-    <div class="chat-area" id="chat-area">
-        <div class="welcome-tip">
+    <div class="chat-area" id="chatArea">
+        <div class="welcome">
             <strong>Welcome to Zaahir's Tutor! 🎓</strong><br><br>
-            <strong>📝 Generate Papers:</strong> Click the ☰ menu → Generate Paper → choose settings → click Generate.<br>
-            <strong>✨ Ask About Anything:</strong> Highlight any text in a generated paper → click "Ask Zaahir".<br><br>
-            Select your subject in the menu and ask me anything!
+            Click the ☰ button to open the menu.<br>
+            Select a subject, generate papers, or ask questions!
         </div>
     </div>
     <div class="input-bar">
-        <textarea class="chat-input" id="chat-input" placeholder="Ask me anything..." onkeydown="window.handleKey(event)"></textarea>
-        <button class="send-btn" id="send-btn" onclick="window.sendMessage()">Send</button>
+        <textarea class="chat-input" id="chatInput" placeholder="Ask me anything..." rows="1"></textarea>
+        <button class="send-btn" id="sendBtn">Send</button>
     </div>
 </div>
 
 <script>
-    // Global variables
-    let mode = 'tutor';
+    // Simple menu functions - no window. prefix needed
     let chatHistory = [];
-    let selectionToolbar = null;
-
-    // Make all functions globally available via window
-    window.openMenu = function() { 
-        const panel = document.getElementById('menu-panel');
-        const overlay = document.getElementById('overlay');
-        if (panel) panel.classList.add('open');
-        if (overlay) overlay.classList.add('open');
-        console.log('Menu opened');
+    let currentMode = 'tutor';
+    
+    // Get elements
+    const menuPanel = document.getElementById('menuPanel');
+    const overlay = document.getElementById('overlay');
+    const menuButton = document.getElementById('menuButton');
+    const closeMenuBtn = document.getElementById('closeMenuBtn');
+    
+    // Menu functions
+    function openMenu() {
+        menuPanel.classList.add('show');
+        overlay.classList.add('show');
+    }
+    
+    function closeMenu() {
+        menuPanel.classList.remove('show');
+        overlay.classList.remove('show');
+    }
+    
+    // Event listeners
+    menuButton.onclick = openMenu;
+    closeMenuBtn.onclick = closeMenu;
+    overlay.onclick = closeMenu;
+    
+    // Mode switching
+    document.getElementById('tutorModeBtn').onclick = function() {
+        currentMode = 'tutor';
+        document.getElementById('tutorModeBtn').classList.add('active');
+        document.getElementById('paperModeBtn').classList.remove('active');
+        document.getElementById('paperSettings').classList.add('hidden');
+        closeMenu();
     };
     
-    window.closeMenu = function() { 
-        const panel = document.getElementById('menu-panel');
-        const overlay = document.getElementById('overlay');
-        if (panel) panel.classList.remove('open');
-        if (overlay) overlay.classList.remove('open');
-        console.log('Menu closed');
+    document.getElementById('paperModeBtn').onclick = function() {
+        currentMode = 'paper';
+        document.getElementById('paperModeBtn').classList.add('active');
+        document.getElementById('tutorModeBtn').classList.remove('active');
+        document.getElementById('paperSettings').classList.remove('hidden');
+        closeMenu();
     };
-
-    window.setTheme = function(theme) {
-        const colors = {
-            light: { bg: '#f4f6fb', text: '#1a1d2e', accent: '#4a6adc', header: '#ffffff', border: '#dde2f0', user: '#4a6adc', ai: '#ffffff' },
-            dark: { bg: '#0f1117', text: '#e8e8f0', accent: '#7c9eff', header: '#1a1d2e', border: '#2d3148', user: '#1e2a5e', ai: '#161925' },
-            green: { bg: '#0a0f0d', text: '#e0f0e8', accent: '#3ddc84', header: '#0f1a14', border: '#1e3d2a', user: '#0f2a1e', ai: '#0f1a14' },
-            purple: { bg: '#0d0a14', text: '#ede8f8', accent: '#b06aff', header: '#160f22', border: '#2d1f48', user: '#2a1a5e', ai: '#160f22' }
-        };
-        const c = colors[theme];
-        document.body.style.background = c.bg;
-        document.body.style.color = c.text;
-        const header = document.querySelector('.header');
-        if (header) header.style.background = c.header;
-        const inputBar = document.querySelector('.input-bar');
-        if (inputBar) inputBar.style.background = c.header;
-        const menuPanel = document.getElementById('menu-panel');
-        if (menuPanel) menuPanel.style.background = c.ai;
-        document.querySelectorAll('.msg.ai').forEach(el => el.style.background = c.ai);
-        document.querySelectorAll('.msg.user').forEach(el => el.style.background = c.user);
-        document.querySelectorAll('.menu-select, .menu-input, .chat-input').forEach(el => el.style.background = c.ai);
-        localStorage.setItem('theme', theme);
-    };
-
-    window.setMode = function(m) {
-        mode = m;
-        const tutorBtn = document.getElementById('btn-tutor');
-        const paperBtn = document.getElementById('btn-paper');
-        const paperSettings = document.getElementById('paper-settings');
-        if (tutorBtn) tutorBtn.classList.toggle('active', m === 'tutor');
-        if (paperBtn) paperBtn.classList.toggle('active', m === 'paper');
-        if (paperSettings) paperSettings.classList.toggle('hidden', m !== 'paper');
-    };
-
-    window.handleKey = function(e) { 
-        if (e.key === 'Enter' && !e.shiftKey) { 
-            e.preventDefault(); 
-            window.sendMessage(); 
-        } 
-    };
-
-    function escapeHtml(text) { 
-        const div = document.createElement('div');
-        div.appendChild(document.createTextNode(text));
-        return div.innerHTML;
+    
+    // Load subjects
+    async function loadSubjects() {
+        const res = await fetch('/subjects');
+        const data = await res.json();
+        const select = document.getElementById('subjectSelect');
+        select.innerHTML = data.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
     }
-
+    
+    // Send message
+    document.getElementById('sendBtn').onclick = async function() {
+        const input = document.getElementById('chatInput');
+        const msg = input.value.trim();
+        if (!msg) return;
+        
+        addMessage(msg, 'user');
+        input.value = '';
+        
+        const thinking = document.createElement('div');
+        thinking.className = 'thinking';
+        thinking.textContent = '✦ Thinking...';
+        document.getElementById('chatArea').appendChild(thinking);
+        
+        try {
+            const res = await fetch('/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    message: msg,
+                    subject: document.getElementById('subjectSelect').value,
+                    history: chatHistory.slice(-20)
+                })
+            });
+            const data = await res.json();
+            thinking.remove();
+            addMessage(data.answer, 'ai', data.model_used);
+            chatHistory.push({ role: 'assistant', content: data.answer });
+        } catch(e) {
+            thinking.remove();
+            addMessage('Error: Could not reach server.', 'ai');
+        }
+    };
+    
+    // Enter key
+    document.getElementById('chatInput').onkeydown = function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            document.getElementById('sendBtn').click();
+        }
+    };
+    
     function addMessage(content, type, model) {
-        const area = document.getElementById('chat-area');
-        if (!area) return;
+        const area = document.getElementById('chatArea');
         const div = document.createElement('div');
         div.className = 'msg ' + type;
         if (type === 'ai') {
-            if (content.includes('NATIONAL SENIOR CERTIFICATE') || content.includes('GRADE 12')) {
+            if (content.includes('NATIONAL SENIOR CERTIFICATE')) {
                 div.innerHTML = `<div class="paper-container">${escapeHtml(content)}</div>`;
             } else {
                 div.innerHTML = content.replace(/\n/g, '<br>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
             }
-            if (model) { 
+            if (model) {
                 const modelDiv = document.createElement('div');
                 modelDiv.className = 'model-tag';
                 modelDiv.textContent = 'Model: ' + model;
@@ -364,145 +375,77 @@ HTML_CONTENT = '''<!DOCTYPE html>
         area.appendChild(div);
         area.scrollTop = area.scrollHeight;
     }
-
-    window.sendMessage = async function() {
-        const input = document.getElementById('chat-input');
-        const msg = input.value.trim();
-        if (!msg) return;
-        input.value = '';
-        addMessage(msg, 'user');
-        chatHistory.push({ role: 'user', content: msg });
-        
-        const thinking = document.createElement('div');
-        thinking.className = 'thinking';
-        thinking.textContent = '✦ Thinking...';
-        document.getElementById('chat-area').appendChild(thinking);
-        
-        try {
-            const res = await fetch('/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    message: msg, 
-                    subject: document.getElementById('subject-select')?.value || 'Mathematics', 
-                    history: chatHistory.slice(-20) 
-                })
-            });
-            const data = await res.json();
-            thinking.remove();
-            addMessage(data.answer, 'ai', data.model_used);
-            chatHistory.push({ role: 'assistant', content: data.answer });
-        } catch(e) { 
-            thinking.remove(); 
-            addMessage('Error: Could not reach server.', 'ai'); 
-        }
-    };
-
-    window.askSelection = async function(text) {
-        if (selectionToolbar) { 
-            selectionToolbar.remove(); 
-            selectionToolbar = null; 
-        }
-        window.getSelection().removeAllRanges();
-        addMessage(`📌 You asked about: "${text.substring(0, 100)}"`, 'user');
-        
-        const thinking = document.createElement('div');
-        thinking.className = 'thinking';
-        thinking.textContent = '🔍 Zaahir is explaining...';
-        document.getElementById('chat-area').appendChild(thinking);
-        
-        try {
-            const res = await fetch('/ask-about-selection', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    selected_text: text, 
-                    subject: document.getElementById('subject-select')?.value || 'Mathematics', 
-                    history: chatHistory.slice(-10) 
-                })
-            });
-            const data = await res.json();
-            thinking.remove();
-            addMessage(data.answer, 'ai', data.model_used);
-            chatHistory.push({ role: 'assistant', content: data.answer });
-        } catch(e) { 
-            thinking.remove(); 
-            addMessage('Error explaining that section.', 'ai'); 
-        }
-    };
-
-    window.generatePaper = async function() {
-        const btn = document.getElementById('gen-btn');
-        if (btn) {
-            btn.disabled = true;
-            btn.textContent = 'Generating...';
-        }
-        addMessage("📝 **Generating your exam paper...**\n\nCreating an authentic DBE-style paper. This may take 30-60 seconds.", 'ai');
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(text));
+        return div.innerHTML;
+    }
+    
+    // Generate paper
+    document.getElementById('generatePaperBtn').onclick = async function() {
+        const btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Generating...';
+        addMessage("📝 Generating your exam paper... (30-60 seconds)", 'ai');
         
         try {
             const res = await fetch('/generate-paper', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
-                    subject: document.getElementById('subject-select')?.value || 'Mathematics',
-                    paper_number: parseInt(document.getElementById('paper-num')?.value || '1'),
-                    total_marks: parseInt(document.getElementById('total-marks')?.value || '150'),
-                    duration_hours: parseFloat(document.getElementById('duration')?.value || '3'),
-                    topics: (document.getElementById('topics')?.value || '').split(',').map(t => t.trim()).filter(Boolean),
-                    include_memo: document.getElementById('include-memo')?.checked || true
+                    subject: document.getElementById('subjectSelect').value,
+                    paper_number: parseInt(document.getElementById('paperNum').value),
+                    total_marks: parseInt(document.getElementById('totalMarks').value),
+                    duration_hours: parseFloat(document.getElementById('duration').value),
+                    topics: document.getElementById('topics').value.split(',').map(t => t.trim()).filter(Boolean),
+                    include_memo: document.getElementById('includeMemo').checked
                 })
             });
             const data = await res.json();
             let msg = `📄 **${data.subject} Paper ${data.paper_number}**\n\n**Marks:** ${data.total_marks} | **Duration:** ${data.duration_hours} hours\n\n---\n\n${data.paper}`;
             if (data.memo) msg += `\n\n---\n\n📋 **MEMORANDUM**\n\n${data.memo}`;
-            msg += `\n\n---\n\n💡 **Tip:** Highlight any part above and click "Ask Zaahir" for explanation!`;
+            msg += `\n\n💡 Tip: You can highlight any text above to ask about it!`;
             addMessage(msg, 'ai', data.model_used);
-        } catch(e) { 
-            addMessage('Error generating paper. Please try again.', 'ai'); 
+        } catch(e) {
+            addMessage('Error generating paper.', 'ai');
         }
-        
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = '📄 Generate Paper + Memo';
-        }
+        btn.disabled = false;
+        btn.textContent = '📄 Generate Paper + Memo';
     };
-
-    async function loadSubjects() {
-        try {
-            const res = await fetch('/subjects');
-            const data = await res.json();
-            const select = document.getElementById('subject-select');
-            if (select) select.innerHTML = data.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
-        } catch(e) { console.log(e); }
-    }
-
-    // Text selection handler
-    document.addEventListener('mouseup', function() {
-        const sel = window.getSelection();
-        const text = sel.toString().trim();
-        if (selectionToolbar) { 
-            selectionToolbar.remove(); 
-            selectionToolbar = null; 
-        }
-        if (text.length > 0 && text.length < 500) {
-            const range = sel.getRangeAt(0);
-            const rect = range.getBoundingClientRect();
-            selectionToolbar = document.createElement('div');
-            selectionToolbar.className = 'selection-toolbar';
-            selectionToolbar.innerHTML = `<span>📖 Ask Zaahir</span><button onclick="window.askSelection('${text.replace(/'/g, "\\'")}')">Ask</button>`;
-            selectionToolbar.style.position = 'fixed';
-            selectionToolbar.style.left = (rect.left + window.scrollX) + 'px';
-            selectionToolbar.style.top = (rect.top + window.scrollY - 40) + 'px';
-            document.body.appendChild(selectionToolbar);
-        }
+    
+    // Theme switching
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.onclick = function() {
+            const theme = this.getAttribute('data-theme');
+            setTheme(theme);
+        };
     });
-
+    
+    function setTheme(theme) {
+        const colors = {
+            light: { bg: '#f4f6fb', text: '#1a1d2e', accent: '#4a6adc', header: '#ffffff', border: '#dde2f0' },
+            dark: { bg: '#0f1117', text: '#e8e8f0', accent: '#7c9eff', header: '#1a1d2e', border: '#2d3148' },
+            green: { bg: '#0a0f0d', text: '#e0f0e8', accent: '#3ddc84', header: '#0f1a14', border: '#1e3d2a' },
+            purple: { bg: '#0d0a14', text: '#ede8f8', accent: '#b06aff', header: '#160f22', border: '#2d1f48' }
+        };
+        const c = colors[theme];
+        document.body.style.background = c.bg;
+        document.body.style.color = c.text;
+        document.querySelector('.header').style.background = c.header;
+        document.querySelector('.input-bar').style.background = c.header;
+        document.querySelector('.menu-panel').style.background = c.header;
+        localStorage.setItem('theme', theme);
+    }
+    
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    setTheme(savedTheme);
+    
     // Initialize
     loadSubjects();
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    window.setTheme(savedTheme);
     
-    console.log('Tutor loaded! All functions ready.');
+    console.log('Tutor loaded! Click the ☰ button to open menu.');
 </script>
 </body>
 </html>
